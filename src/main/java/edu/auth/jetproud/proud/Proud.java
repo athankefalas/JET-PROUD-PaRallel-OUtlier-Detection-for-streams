@@ -1,5 +1,8 @@
 package edu.auth.jetproud.proud;
 
+import com.hazelcast.jet.Jet;
+import com.hazelcast.jet.JetInstance;
+import com.hazelcast.jet.pipeline.Pipeline;
 import edu.auth.jetproud.application.config.*;
 import edu.auth.jetproud.application.parameters.ProudConfigurationReader;
 import edu.auth.jetproud.application.parameters.errors.ProudArgumentException;
@@ -72,6 +75,12 @@ public final class Proud implements ProudContext
         return properties.get(name);
     }
 
+    // Methods
+
+    public void execute(Pipeline pipeline) {
+        JetInstance jet = Jet.newJetInstance();
+        jet.newJob(pipeline).join();
+    }
 
     // Static Init
 

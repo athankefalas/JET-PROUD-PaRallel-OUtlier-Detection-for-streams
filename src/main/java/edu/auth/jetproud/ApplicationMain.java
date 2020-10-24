@@ -1,7 +1,9 @@
 package edu.auth.jetproud;
 
+import com.hazelcast.jet.Job;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 import edu.auth.jetproud.model.AnyProudData;
+import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.proud.source.ProudSource;
 import edu.auth.jetproud.proud.streamstage.ProudPartitionedStreamStage;
@@ -48,8 +50,6 @@ public class ApplicationMain {
                 .distinct()
                 ;
 
-
-
         // Case 1 - Native proud
         //pipeline.readFrom( ... ProudSource ( ? extends StreamSource ) ... )
         //    .applyPartitioning()
@@ -63,6 +63,6 @@ public class ApplicationMain {
         //    .detectOutliers() | .proudExecute()
         //    .writeOutliersTo( ... Sink ...)    { .writeTo( Sinks.influxDB() ) }
 
-        System.out.println();
+        Job job = ProudExecutor.execute(proud, pipeline);
     }
 }

@@ -14,14 +14,16 @@ public interface ProudAlgorithmExecutor
     ProudAlgorithmOption algorithm();
 
     // TODO: Change Object to StreamStage<?>
-    <D extends AnyProudData> Object execute(StreamStage<PartitionedData<D>> streamStage, ProudContext context) throws ProudException;
+    <D extends AnyProudData> Object execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException;
 
 
     // TODO: Add implementations
-    static ProudAlgorithmExecutor forAlgorithm(ProudAlgorithmOption algorithmOption) {
+    static ProudAlgorithmExecutor create(ProudContext proudContext) {
+        ProudAlgorithmOption algorithmOption = proudContext.getProudConfiguration().getAlgorithm();
+
         switch (algorithmOption) {
             case Naive:
-                return new NaiveProudAlgorithmExecutor();
+                return new NaiveProudAlgorithmExecutor(proudContext);
             case Advanced:
                 break;
             case AdvancedExtended:

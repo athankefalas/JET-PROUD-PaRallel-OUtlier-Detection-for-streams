@@ -20,9 +20,8 @@ public class ProudPartitionedStreamStageExtender<T extends AnyProudData> extends
 
 
     void todo() throws ProudException {
-        ProudAlgorithmOption algorithmOption = proudContext.getProudConfiguration().getAlgorithm();
-        ProudAlgorithmExecutor executor = ProudAlgorithmExecutor.forAlgorithm(algorithmOption);
-        Object anyStage = executor.execute(target, proudContext);
+        ProudAlgorithmExecutor executor = ProudAlgorithmExecutor.create(proudContext);
+        Object anyStage = executor.execute(target);
         //return anyStage;
     }
 

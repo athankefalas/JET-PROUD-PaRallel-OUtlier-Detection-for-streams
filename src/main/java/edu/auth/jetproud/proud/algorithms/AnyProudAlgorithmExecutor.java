@@ -1,6 +1,6 @@
 package edu.auth.jetproud.proud.algorithms;
 
-import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
+import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
@@ -10,14 +10,19 @@ import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.contracts.ProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
+import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.utils.Tuple;
 
+import java.util.List;
+
 public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implements ProudAlgorithmExecutor
 {
-    private final ProudAlgorithmOption algorithm;
+    protected final ProudContext proudContext;
+    protected final ProudAlgorithmOption algorithm;
 
-    public AnyProudAlgorithmExecutor(ProudAlgorithmOption algorithm) {
+    public AnyProudAlgorithmExecutor(ProudContext proudContext, ProudAlgorithmOption algorithm) {
+        this.proudContext = proudContext;
         this.algorithm = algorithm;
     }
 
@@ -33,39 +38,42 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
     }
 
     @Override
-    public <D extends AnyProudData> Object execute(StreamStage<PartitionedData<D>> streamStage, ProudContext context) throws ProudException {
-        ProudSpaceOption spaceOption = context.getProudConfiguration().getSpace();
+    public <D extends AnyProudData> Object execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException {
+        ProudComponentBuilder functionBuilder = ProudComponentBuilder.create(proudContext);
+        ProudSpaceOption spaceOption = proudContext.getProudConfiguration().getSpace();
 
-        long windowSize = context.getProudInternalConfiguration().getCommonW();
-        long windowSlideSize = context.getProudInternalConfiguration().getCommonS();
+        long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
+        long windowSlideSize = proudContext.getProudInternalConfiguration().getCommonS();
 
-        StageWithKeyAndWindow<Tuple<Integer, T>, Integer> windowedStage = prepareStage(streamStage)
+
+        StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage = prepareStage(streamStage)
+                .window(WindowDefinition.sliding(windowSize,windowSlideSize))
                 .groupingKey(Tuple::getFirst)
-                .window(WindowDefinition.sliding(windowSize,windowSlideSize));
+                .aggregate(functionBuilder.windowAggregator());
 
         switch (spaceOption) {
             case None:
                 throw new UnsupportedSpaceException(spaceOption, algorithm);
             case Single:
-                return processSingleSpace(windowedStage, context);
+                return processSingleSpace(windowedStage);
             case MultiQueryMultiParams:
-                return processMultiQueryParamsSpace(windowedStage, context);
+                return processMultiQueryParamsSpace(windowedStage);
             case MultiQueryMultiParamsMultiWindowParams:
-                return processMultiQueryMultiParamsMultiWindowParamsSpace(windowedStage, context);
+                return processMultiQueryMultiParamsMultiWindowParamsSpace(windowedStage);
         }
 
         return null;
     }
 
-    protected Object processSingleSpace(StageWithKeyAndWindow<Tuple<Integer, T>, Integer> windowedStage, ProudContext context) throws UnsupportedSpaceException {
+    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.Single, algorithm);
     }
 
-    protected Object processMultiQueryParamsSpace(StageWithKeyAndWindow<Tuple<Integer, T>, Integer> windowedStage, ProudContext context) throws UnsupportedSpaceException {
+    protected Object processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParams, algorithm);
     }
 
-    protected Object processMultiQueryMultiParamsMultiWindowParamsSpace(StageWithKeyAndWindow<Tuple<Integer, T>, Integer> windowedStage, ProudContext context) throws UnsupportedSpaceException {
+    protected Object processMultiQueryMultiParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams, algorithm);
     }
 }
