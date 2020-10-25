@@ -8,6 +8,7 @@ import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.NaiveProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.NotImplementedAlgorithmException;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
+import edu.auth.jetproud.utils.ExceptionUtils;
 
 public interface ProudAlgorithmExecutor
 {
@@ -44,6 +45,6 @@ public interface ProudAlgorithmExecutor
                 break;
         }
 
-        throw new RuntimeException(new NotImplementedAlgorithmException(algorithmOption));
+        throw ExceptionUtils.sneaky(new NotImplementedAlgorithmException(algorithmOption));
     }
 }

@@ -4,6 +4,7 @@ import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.pipeline.*;
 import edu.auth.jetproud.exceptions.ParserDeserializationException;
 import edu.auth.jetproud.exceptions.ProudException;
+import edu.auth.jetproud.utils.ExceptionUtils;
 import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.ProudContext;
@@ -94,7 +95,7 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T> {
             try {
                 reader.close();
             } catch (IOException e) {
-                throw new RuntimeException(e.getMessage(), e);
+                throw ExceptionUtils.sneaky(e);
             }
         }
     }

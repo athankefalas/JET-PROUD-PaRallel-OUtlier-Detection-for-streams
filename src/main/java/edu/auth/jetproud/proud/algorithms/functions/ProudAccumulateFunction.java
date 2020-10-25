@@ -3,9 +3,8 @@ package edu.auth.jetproud.proud.algorithms.functions;
 import com.hazelcast.function.BiConsumerEx;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.proud.ProudContext;
-import edu.auth.jetproud.proud.statistics.ProudStatistics;
+import edu.auth.jetproud.proud.state.ProudStatistics;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;

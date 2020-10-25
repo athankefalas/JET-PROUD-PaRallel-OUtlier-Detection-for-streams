@@ -1,9 +1,10 @@
 package edu.auth.jetproud.proud.algorithms;
 
 import com.hazelcast.jet.Traversers;
-import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.WindowDefinition;
+import com.hazelcast.map.IMap;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.datastructures.vptree.distance.DistanceFunction;
 import edu.auth.jetproud.model.AnyProudData;
@@ -11,11 +12,9 @@ import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.statistics.ProudStatistics;
-import edu.auth.jetproud.utils.Lists;
+import edu.auth.jetproud.proud.state.ProudState;
 import edu.auth.jetproud.utils.Tuple;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +33,12 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
     @Override
     protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, NaiveProudData>>>> windowedStage) throws UnsupportedSpaceException {
         // TODO impl
-        ProudComponentBuilder componentBuilder = ProudComponentBuilder.create(proudContext);
+        final String METADATA_STATE = "METADATA_STATE";
+        final ProudState proudState = ProudState.global();
+
+        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
         int w =proudContext.getProudConfiguration().getWindowSizes().get(0);
@@ -49,7 +53,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         final double R = outlierQuery.r;
 
         StreamStage<List<NaiveProudData>> detectOutliersStage = windowedStage.rollingAggregate(
-                componentBuilder.outlierAggregator((outliers, window)->{
+                components.outlierAggregator((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
 
@@ -95,26 +99,41 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                         for (NaiveProudData neighbour: activeNeighbours) {
                             neighbour.count_after++;
 
-                            if (neighbour.count_after >= k)
+                            if (neighbour.count_after >= K)
                                 neighbour.safe_inlier = true;
                         }
                     }
 
                     // Add all non-safe inliers to the outliers accumulator
                     for (NaiveProudData currentNode : windowItems) {
-                        // Move to 2nd loop
                         if (!currentNode.safe_inlier)
                             outliers.add(currentNode);
                     }
                 })
         );
 
-        // don't flatten yet !!!
+        // Group Metadata
+        StreamStage<List<Tuple<Long, OutlierQuery>>> outStage =
+                detectOutliersStage.flatMap(Traversers::traverseIterable)
+                .window(WindowDefinition.tumbling(windowSize))
+                .groupingKey((it)->it.id % partitionsCount)
+                .aggregate(components.metaWindowAggregator())
+                .rollingAggregate(
+                        components.metadataAggregator((acc, window)->{
+                            IMap<Integer, NaiveProudData> state = proudState.getMap(METADATA_STATE);
 
-        //detectOutliersStage. same but return StreamStage<List<Tuple<Double,Query>>>
+                            int key = window.getKey();
+
+                            long windowStart = window.start();
+                            long windowEnd = window.end();
+
+                            List<NaiveProudData> elements = window.getValue();
+
+
+                        })
+                );
 
         //flatten here and then to pipeline Sink
-        StreamStage<NaiveProudData> temp = detectOutliersStage.flatMap(Traversers::traverseIterable);
 
         //return final stage
         return super.processSingleSpace(windowedStage);

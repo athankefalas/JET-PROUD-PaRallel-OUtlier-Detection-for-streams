@@ -29,6 +29,13 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
         this.state = Lists.of(value);
     }
 
+    // Getters
+
+    public int getId() {
+        return id;
+    }
+
+
     // EuclideanCoordinate Impl
 
     public EuclideanCoordinate toEuclideanCoordinate() {
