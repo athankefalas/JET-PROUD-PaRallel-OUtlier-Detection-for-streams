@@ -11,13 +11,18 @@ import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.contracts.ProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
+import edu.auth.jetproud.proud.state.ProudStatistics;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.util.List;
 
 public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implements ProudAlgorithmExecutor
 {
+    public static final String SLIDE_COUNTER = "SLIDE_COUNTER";
+    public static final String CPU_TIME_COUNTER = "CPU_TIME_COUNTER";
+
     protected final ProudContext proudContext;
     protected final ProudAlgorithmOption algorithm;
 
@@ -30,6 +35,14 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
     public ProudAlgorithmOption algorithm() {
         return algorithm;
     }
+
+    @Override
+    public void createDistributableData() {
+        ProudStatistics.slideCounter();
+        ProudStatistics.cpuTimeCounter();
+    }
+
+    // Implementation
 
     protected abstract <D extends AnyProudData> T transform(D point);
 

@@ -14,6 +14,8 @@ public interface ProudAlgorithmExecutor
 {
     ProudAlgorithmOption algorithm();
 
+    void createDistributableData();
+
     // TODO: Change Object to StreamStage<?>
     <D extends AnyProudData> Object execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException;
 

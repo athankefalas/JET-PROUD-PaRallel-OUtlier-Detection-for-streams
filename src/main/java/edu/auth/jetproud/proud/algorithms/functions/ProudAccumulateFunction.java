@@ -1,9 +1,11 @@
 package edu.auth.jetproud.proud.algorithms.functions;
 
+import com.hazelcast.crdt.pncounter.PNCounter;
 import com.hazelcast.function.BiConsumerEx;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.state.ProudStatistics;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -19,19 +21,20 @@ public class ProudAccumulateFunction<T extends AnyProudData> implements BiConsum
     }
 
     private ProudContext context;
-    private ProudStatistics statistics;
     private AccumulateFunction<T> accumulateFunction;
 
-    public ProudAccumulateFunction(ProudContext context, ProudStatistics statistics, AccumulateFunction<T> accumulateFunction) {
+    public ProudAccumulateFunction(ProudContext context, AccumulateFunction<T> accumulateFunction) {
         this.context = context;
-        this.statistics = statistics;
         this.accumulateFunction = accumulateFunction;
     }
 
     @Override
     public void acceptEx(List<T> accumulator, KeyedWindowResult<Integer, List<Tuple<Integer, T>>> item) throws Exception {
         // Statistics
-        statistics.getSlideCounter().incrementAndGet();
+        DistributedCounter slideCounter = ProudStatistics.slideCounter();
+        DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+
+        slideCounter.incrementAndGet();
         long startTime = System.currentTimeMillis();
 
         // Execute Accumulator Function
@@ -40,7 +43,7 @@ public class ProudAccumulateFunction<T extends AnyProudData> implements BiConsum
         // Statistics
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
-        statistics.getCpuTimeCounter().addAndGet(duration);
+        cpuTimeCounter.addAndGet(duration);
     }
 
 }

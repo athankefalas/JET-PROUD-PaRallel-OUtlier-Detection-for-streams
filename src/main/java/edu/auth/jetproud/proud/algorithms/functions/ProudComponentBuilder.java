@@ -6,8 +6,7 @@ import com.hazelcast.jet.aggregate.AggregateOperation1;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.ProudContext;
-import edu.auth.jetproud.proud.algorithms.OutlierQuery;
-import edu.auth.jetproud.proud.state.ProudStatistics;
+import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.util.LinkedList;
@@ -16,19 +15,17 @@ import java.util.List;
 public final class ProudComponentBuilder
 {
     private ProudContext proudContext;
-    private final ProudStatistics statistics;
 
-    private ProudComponentBuilder(ProudContext proudContext, ProudStatistics statistics) {
+    private ProudComponentBuilder(ProudContext proudContext) {
         this.proudContext = proudContext;
-        this.statistics = statistics;
     }
 
     public static ProudComponentBuilder create(ProudContext proudContext) {
-        return new ProudComponentBuilder(proudContext, ProudStatistics.global());
+        return new ProudComponentBuilder(proudContext);
     }
 
     public <T extends AnyProudData> ProudAccumulateFunction<T> accumulator(ProudAccumulateFunction.AccumulateFunction<T> function) {
-        return new ProudAccumulateFunction<>(proudContext, statistics, function);
+        return new ProudAccumulateFunction<>(proudContext, function);
     }
 
     public <T extends AnyProudData> AggregateOperation1<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>, List<T>, List<T>> outlierAggregator(ProudAccumulateFunction.AccumulateFunction<T> accumulateFunction) {
