@@ -1,11 +1,13 @@
 package edu.auth.jetproud.datastructures.mtree.promotion;
 
 import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
+import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.utils.CollectionUtils;
 import edu.auth.jetproud.utils.Pair;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * An object that chooses a pair from a set of data objects.
@@ -38,5 +40,18 @@ public interface PromotionFunction<DATA> {
             return new Pair<>(promotedList.get(0), promotedList.get(1));
         };
     }
+
+
+    /**
+     * A {@linkplain PromotionFunction promotion function} object that randomly
+     * chooses ("promotes") two data objects.
+     *
+     * @param <DATA> The type of the data objects.
+     */
+    static <DATA extends Comparable> PromotionFunction<DATA> minMax() {
+        return (data, distanceFunction) -> CollectionUtils.minMax(data);
+    }
+
+
 
 }

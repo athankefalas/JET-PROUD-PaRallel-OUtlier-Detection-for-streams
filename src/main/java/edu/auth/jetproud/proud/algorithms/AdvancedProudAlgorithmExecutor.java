@@ -1,0 +1,196 @@
+package edu.auth.jetproud.proud.algorithms;
+
+import com.hazelcast.jet.datamodel.KeyedWindowResult;
+import com.hazelcast.jet.pipeline.StreamStage;
+import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.datastructures.mtree.MTree;
+import edu.auth.jetproud.datastructures.mtree.ResultItem;
+import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
+import edu.auth.jetproud.datastructures.mtree.partition.PartitionFunction;
+import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
+import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
+import edu.auth.jetproud.model.AdvancedProudData;
+import edu.auth.jetproud.model.AnyProudData;
+import edu.auth.jetproud.model.NaiveProudData;
+import edu.auth.jetproud.model.meta.OutlierMetadata;
+import edu.auth.jetproud.model.meta.OutlierQuery;
+import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
+import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.utils.Lists;
+import edu.auth.jetproud.utils.Tuple;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
+{
+
+    public static final String DATA_STATE = "DATA_STATE";
+    public static final String METADATA_STATE = "METADATA_STATE";
+
+    public static class AdvancedState {
+        public MTree<AdvancedProudData> mTree;
+        public HashMap<Integer, AdvancedProudData> map;
+
+        public AdvancedState() {
+        }
+
+        public AdvancedState(MTree<AdvancedProudData> mTree, HashMap<Integer, AdvancedProudData> map) {
+            this.mTree = mTree;
+            this.map = map;
+        }
+    }
+
+    public AdvancedProudAlgorithmExecutor(ProudContext proudContext) {
+        super(proudContext, ProudAlgorithmOption.Advanced);
+    }
+
+    @Override
+    protected <D extends AnyProudData> AdvancedProudData transform(D point) {
+        return new AdvancedProudData(point);
+    }
+
+    @Override
+    public void createDistributableData() {
+        super.createDistributableData();
+        DistributedMap<String, AdvancedState> stateMap = new DistributedMap<>(DATA_STATE);
+        DistributedMap<String, OutlierMetadata<AdvancedProudData>> metadataStateMap = new DistributedMap<>(METADATA_STATE);
+    }
+
+    @Override
+    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AdvancedProudData>>>> windowedStage) throws UnsupportedSpaceException {
+        // TODO: Impl
+        // Initialize distributed stateful data
+        createDistributableData();
+
+        final DistributedMap<String, AdvancedState> stateMap = new DistributedMap<>(DATA_STATE);
+        final DistributedMap<String, OutlierMetadata<AdvancedProudData>> metadataStateMap = new DistributedMap<>(METADATA_STATE);
+
+        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
+
+        // Create Outlier Query - Queries
+        int w = proudContext.getProudConfiguration().getWindowSizes().get(0);
+        int s = proudContext.getProudConfiguration().getSlideSizes().get(0);
+        double r = proudContext.getProudConfiguration().getRNeighbourhood().get(0);
+        int k = proudContext.getProudConfiguration().getKNeighbours().get(0);
+
+        final OutlierQuery outlierQuery = new OutlierQuery(r,k,w,s);
+
+        final int slide = outlierQuery.s;
+        final int K = outlierQuery.k;
+        final double R = outlierQuery.r;
+
+        StreamStage<List<AdvancedProudData>> detectOutliersStage = windowedStage.rollingAggregate(
+                components.outlierAggregator((outliers, window)->{
+                    // Detect outliers and add them to outliers accumulator
+                    int partition = window.getKey();
+
+                    long windowStart = window.start();
+                    long windowEnd = window.end();
+
+                    final String STATE_KEY = "STATE";
+
+                    AdvancedState current = stateMap.getOrDefault(STATE_KEY, null);
+
+                    List<AdvancedProudData> elements = window.getValue().stream()
+                            .map(Tuple::getSecond)
+                            .collect(Collectors.toList());
+
+                    if (current == null) {
+                        SplitFunction<AdvancedProudData> splitFunction = SplitFunction.composedOf(
+                                PromotionFunction.minMax(),
+                                PartitionFunction.balanced()
+                        );
+
+                        MTree<AdvancedProudData> mTree = new MTree<>(k, DistanceFunction.euclidean(), splitFunction);
+                        current = new AdvancedState(mTree, new HashMap<>());
+
+                        for(AdvancedProudData el:elements) {
+                            mTree.add(el);
+                            current.map.put(el.id, el);
+                        }
+
+                        // Filter non-expired
+                        elements = elements.stream()
+                                .filter((it)->it.arrival >= windowEnd - slide)
+                                .collect(Collectors.toList());
+
+                    } else {
+                        // Filter non-expired
+                        elements = elements.stream()
+                                .filter((it)->it.arrival >= windowEnd - slide)
+                                .collect(Collectors.toList());
+
+                        for (AdvancedProudData el:elements) {
+                            current.mTree.add(el);
+                            current.map.put(el.id, el);
+                        }
+                    }
+
+                    List<AdvancedProudData> neighbours = Lists.make();
+
+                    for (AdvancedProudData el: elements) {
+                        MTree<AdvancedProudData>.Query treeQuery = current.mTree.getNearestByRange(el, r);
+
+                        for (ResultItem<AdvancedProudData> item:treeQuery) {
+                            AdvancedProudData node = item.data;
+
+                            if (node.id == el.id)
+                                continue;
+
+                            if (node.arrival < windowEnd - slide) {
+                                //
+                                AdvancedProudData element = current.map.get(el.id);
+                                AdvancedProudData neighbour = current.map.get(node.id);
+
+                                element.insert_nn_before(node.arrival, k);
+                                neighbour.count_after++;
+
+                                if (neighbour.count_after >= k)
+                                    neighbour.safe_inlier = true;
+
+                            } else {
+                                AdvancedProudData element = current.map.get(el.id);
+
+                                if (el.flag == 0) {
+                                    element.count_after++;
+
+                                    if (element.count_after >= k)
+                                        element.safe_inlier = true;
+                                }
+                            }
+                        }
+                    }
+
+                    // Add outliers to accumulator
+                    for (AdvancedProudData el : current.map.values()) {
+                        if (outliers.stream().anyMatch((it)->it.id == el.id))
+                            continue;
+
+                        outliers.add(el);
+                    }
+
+                    // Remove expiring and flagged objects from MTree
+                    List<AdvancedProudData> toRemove = elements.stream()
+                            .filter((el) -> el.arrival < windowStart + slide || el.flag == 1)
+                            .collect(Collectors.toList());
+
+                    for (AdvancedProudData item:toRemove) {
+                        current.mTree.remove(item);
+                        current.map.remove(item.id);
+                    }
+
+                    // Update state
+                    stateMap.put(STATE_KEY, current);
+                })
+        );
+
+
+
+        return super.processSingleSpace(windowedStage);
+    }
+}

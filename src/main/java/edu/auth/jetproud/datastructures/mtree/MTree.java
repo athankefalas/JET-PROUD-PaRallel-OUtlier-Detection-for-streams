@@ -37,9 +37,9 @@ public class MTree<DATA> implements Serializable
      * resources allocated were only the necessary to identify the <i>n</i>
      * first results.
      */
-    public class Query implements Iterable<ResultItem> {
+    public class Query implements Iterable<ResultItem<DATA>> {
 
-        private class ResultsIterator implements Iterator<ResultItem> {
+        private class ResultsIterator implements Iterator<ResultItem<DATA>> {
 
             private class ItemWithDistances<U> implements Comparable<ItemWithDistances<U>> {
                 private U item;
@@ -65,7 +65,7 @@ public class MTree<DATA> implements Serializable
             }
 
 
-            private ResultItem nextResultItem = null;
+            private ResultItem<DATA> nextResultItem = null;
             private boolean finished = false;
             private PriorityQueue<ItemWithDistances<Node>> pendingQueue = new PriorityQueue<ItemWithDistances<Node>>();
             private double nextPendingMinDistance;
@@ -105,9 +105,9 @@ public class MTree<DATA> implements Serializable
             }
 
             @Override
-            public ResultItem next() {
+            public ResultItem<DATA> next() {
                 if (hasNext()) {
-                    ResultItem next = nextResultItem;
+                    ResultItem<DATA> next = nextResultItem;
                     nextResultItem = null;
                     return next;
                 } else {
@@ -173,7 +173,7 @@ public class MTree<DATA> implements Serializable
                     ItemWithDistances<Entry> nextNearest = nearestQueue.peek();
                     if (nextNearest.distance <= nextPendingMinDistance) {
                         nearestQueue.poll();
-                        nextResultItem = new ResultItem(nextNearest.item.data, nextNearest.distance);
+                        nextResultItem = new ResultItem<DATA>(nextNearest.item.data, nextNearest.distance);
                         ++yieldedCount;
                         return true;
                     }
@@ -193,7 +193,7 @@ public class MTree<DATA> implements Serializable
 
 
         @Override
-        public Iterator<ResultItem> iterator() {
+        public Iterator<ResultItem<DATA>> iterator() {
             return new ResultsIterator();
         }
 
@@ -265,7 +265,10 @@ public class MTree<DATA> implements Serializable
         }
 
         if (splitFunction == null) {
-            splitFunction = SplitFunction.composedOf(PromotionFunction.random(), PartitionFunction.balanced());
+            splitFunction = SplitFunction.composedOf(
+                    PromotionFunction.random(),
+                    PartitionFunction.balanced()
+            );
         }
 
         this.minNodeCapacity = minNodeCapacity;

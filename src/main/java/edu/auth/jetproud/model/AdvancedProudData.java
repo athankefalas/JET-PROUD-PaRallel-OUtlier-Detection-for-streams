@@ -2,8 +2,7 @@ package edu.auth.jetproud.model;
 
 import java.util.List;
 
-public class AdvancedProudData extends NaiveProudData
-{
+public class AdvancedProudData extends NaiveProudData {
 
     public AdvancedProudData(AnyProudData point) {
         super(point);
