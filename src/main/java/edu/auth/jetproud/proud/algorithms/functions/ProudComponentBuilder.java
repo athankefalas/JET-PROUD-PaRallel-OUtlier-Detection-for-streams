@@ -28,7 +28,11 @@ public final class ProudComponentBuilder
         return new ProudAccumulateFunction<>(proudContext, function);
     }
 
-    public <T extends AnyProudData> AggregateOperation1<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>, List<T>, List<T>> outlierAggregator(ProudAccumulateFunction.AccumulateFunction<T> accumulateFunction) {
+    public <T extends AnyProudData> ProudOutlierDetectionFunction<T> outlierDetector(ProudOutlierDetectionFunction.AccumulateFunction<T> function) {
+        return new ProudOutlierDetectionFunction<>(proudContext, function);
+    }
+
+    public <T extends AnyProudData> AggregateOperation1<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>, List<T>, List<T>> outlierAggregation(ProudAccumulateFunction.AccumulateFunction<T> accumulateFunction) {
         return AggregateOperation.withCreate(()->(List<T>)new LinkedList<T>())
                 .andAccumulate(accumulator(accumulateFunction))
                 .andExportFinish((it)->it);
@@ -73,12 +77,18 @@ public final class ProudComponentBuilder
     }
 
 
-    public <T extends AnyProudData> AggregateOperation1<KeyedWindowResult<Integer, List<T>>, List<Tuple<Long,OutlierQuery>>, List<Tuple<Long,OutlierQuery>>> metadataAggregator(BiConsumerEx<List<Tuple<Long,OutlierQuery>>, KeyedWindowResult<Integer, List<T>>> accumulateFunction) {
+    public <T extends AnyProudData> AggregateOperation1<KeyedWindowResult<Integer, List<T>>, List<Tuple<Long,OutlierQuery>>, List<Tuple<Long,OutlierQuery>>> metadataAggregation(BiConsumerEx<List<Tuple<Long,OutlierQuery>>, KeyedWindowResult<Integer, List<T>>> accumulateFunction) {
         return AggregateOperation.withCreate(()->(List<Tuple<Long,OutlierQuery>>)new LinkedList<Tuple<Long,OutlierQuery>>())
                 .andAccumulate(accumulateFunction)
                 .andExportFinish((it)->it);
     }
 
+    // Outlier Detection AND Metadata Aggregation
 
+    public <T extends AnyProudData> AggregateOperation1<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>, List<Tuple<Long,OutlierQuery>>, List<Tuple<Long,OutlierQuery>>> outlierDetection(ProudOutlierDetectionFunction.AccumulateFunction<T> accumulateFunction) {
+        return AggregateOperation.withCreate(()->(List<Tuple<Long,OutlierQuery>>)new LinkedList<Tuple<Long,OutlierQuery>>())
+                .andAccumulate(outlierDetector(accumulateFunction))
+                .andExportFinish((it)->it);
+    }
 
 }

@@ -1,4 +1,4 @@
-package edu.auth.jetproud.proud.algorithms;
+package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
@@ -11,40 +11,37 @@ import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
 import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
 import edu.auth.jetproud.model.AdvancedProudData;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.model.NaiveProudData;
-import edu.auth.jetproud.model.meta.OutlierMetadata;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
-import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 
-public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
+public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
 {
-
     public static final String DATA_STATE = "DATA_STATE";
-    public static final String METADATA_STATE = "METADATA_STATE";
 
-    public static class AdvancedState {
+    public static class AdvancedExtendedState {
         public MTree<AdvancedProudData> mTree;
         public HashMap<Integer, AdvancedProudData> map;
 
-        public AdvancedState() {
+        public AdvancedExtendedState() {
         }
 
-        public AdvancedState(MTree<AdvancedProudData> mTree, HashMap<Integer, AdvancedProudData> map) {
+        public AdvancedExtendedState(MTree<AdvancedProudData> mTree, HashMap<Integer, AdvancedProudData> map) {
             this.mTree = mTree;
             this.map = map;
         }
     }
 
-    public AdvancedProudAlgorithmExecutor(ProudContext proudContext) {
-        super(proudContext, ProudAlgorithmOption.Advanced);
+    public AdvancedExtendedProudAlgorithmExecutor(ProudContext proudContext) {
+        super(proudContext, ProudAlgorithmOption.AdvancedExtended);
     }
 
     @Override
@@ -55,8 +52,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
     @Override
     public void createDistributableData() {
         super.createDistributableData();
-        DistributedMap<String, AdvancedState> stateMap = new DistributedMap<>(DATA_STATE);
-        DistributedMap<String, OutlierMetadata<AdvancedProudData>> metadataStateMap = new DistributedMap<>(METADATA_STATE);
+        DistributedMap<String, AdvancedExtendedState> stateMap = new DistributedMap<>(DATA_STATE);
     }
 
     @Override
@@ -65,8 +61,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
         // Initialize distributed stateful data
         createDistributableData();
 
-        final DistributedMap<String, AdvancedState> stateMap = new DistributedMap<>(DATA_STATE);
-        final DistributedMap<String, OutlierMetadata<AdvancedProudData>> metadataStateMap = new DistributedMap<>(METADATA_STATE);
+        final DistributedMap<String, AdvancedExtendedState> stateMap = new DistributedMap<>(DATA_STATE);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
         final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
@@ -84,8 +79,8 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
         final int K = outlierQuery.k;
         final double R = outlierQuery.r;
 
-        StreamStage<List<AdvancedProudData>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierAggregator((outliers, window)->{
+        StreamStage<List<Tuple<Long, OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
+                components.outlierDetection((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
 
@@ -94,7 +89,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
                     final String STATE_KEY = "STATE";
 
-                    AdvancedState current = stateMap.getOrDefault(STATE_KEY, null);
+                    AdvancedExtendedState current = stateMap.getOrDefault(STATE_KEY, null);
 
                     List<AdvancedProudData> elements = window.getValue().stream()
                             .map(Tuple::getSecond)
@@ -107,7 +102,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                         );
 
                         MTree<AdvancedProudData> mTree = new MTree<>(k, DistanceFunction.euclidean(), splitFunction);
-                        current = new AdvancedState(mTree, new HashMap<>());
+                        current = new AdvancedExtendedState(mTree, new HashMap<>());
 
                         for(AdvancedProudData el:elements) {
                             mTree.add(el);
@@ -131,8 +126,6 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                         }
                     }
 
-                    List<AdvancedProudData> neighbours = Lists.make();
-
                     for (AdvancedProudData el: elements) {
                         MTree<AdvancedProudData>.Query treeQuery = current.mTree.getNearestByRange(el, r);
 
@@ -147,11 +140,14 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                 AdvancedProudData element = current.map.get(el.id);
                                 AdvancedProudData neighbour = current.map.get(node.id);
 
-                                element.insert_nn_before(node.arrival, k);
-                                neighbour.count_after++;
+                                if (element.flag == 0)
+                                    element.insert_nn_before(neighbour.arrival, k);
 
-                                if (neighbour.count_after >= k)
-                                    neighbour.safe_inlier = true;
+                                if (neighbour.flag == 0) {
+                                    neighbour.count_after++;
+                                    if (neighbour.count_after >= k)
+                                        neighbour.safe_inlier = true;
+                                }
 
                             } else {
                                 AdvancedProudData element = current.map.get(el.id);
@@ -167,16 +163,26 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                     }
 
                     // Add outliers to accumulator
-                    for (AdvancedProudData el : current.map.values()) {
-                        if (outliers.stream().anyMatch((it)->it.id == el.id))
-                            continue;
 
-                        outliers.add(el);
+                    int outliersCount = 0;
+
+                    for (AdvancedProudData el:current.map.values()) {
+                        if (el.flag == 0 && !el.safe_inlier) {
+                            long nnBefore = el.nn_before.stream()
+                                    .filter((it)->it >= windowEnd - w)
+                                    .count();
+
+                            if (el.count_after + nnBefore < k)
+                                outliersCount++;
+                        }
                     }
+
+                    OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
+                    outliers.add(new Tuple<>(windowEnd, queryCopy));
 
                     // Remove expiring and flagged objects from MTree
                     List<AdvancedProudData> toRemove = elements.stream()
-                            .filter((el) -> el.arrival < windowStart + slide || el.flag == 1)
+                            .filter((el) -> el.arrival < windowStart + slide)
                             .collect(Collectors.toList());
 
                     for (AdvancedProudData item:toRemove) {
@@ -186,11 +192,17 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
                     // Update state
                     stateMap.put(STATE_KEY, current);
+
                 })
         );
 
+        // TODO: Return the proper stream stage
+        //flatten here ??? and then to pipeline Sink
 
-
+        //return final stage
         return super.processSingleSpace(windowedStage);
     }
+
+
+
 }

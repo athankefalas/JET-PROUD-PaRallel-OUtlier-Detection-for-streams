@@ -5,7 +5,7 @@ import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.exceptions.ProudException;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.ProudContext;
-import edu.auth.jetproud.proud.algorithms.NaiveProudAlgorithmExecutor;
+import edu.auth.jetproud.proud.algorithms.executors.NaiveProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.NotImplementedAlgorithmException;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.utils.ExceptionUtils;

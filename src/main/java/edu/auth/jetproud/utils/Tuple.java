@@ -1,6 +1,8 @@
 package edu.auth.jetproud.utils;
 
-public class Tuple<E1, E2>
+import java.util.Map;
+
+public class Tuple<E1, E2> implements Map.Entry<E1, E2>
 {
     public E1 first;
     public E2 second;
@@ -28,5 +30,27 @@ public class Tuple<E1, E2>
 
     public void setSecond(E2 second) {
         this.second = second;
+    }
+
+    // Entry Impl
+
+    public static <K,V> Tuple<K,V> fromEntry(Map.Entry<K,V> entry) {
+        return new Tuple<>(entry.getKey(), entry.getValue());
+    }
+
+    @Override
+    public E1 getKey() {
+        return first;
+    }
+
+    @Override
+    public E2 getValue() {
+        return second;
+    }
+
+    @Override
+    public E2 setValue(E2 value) {
+        second = value;
+        return second;
     }
 }

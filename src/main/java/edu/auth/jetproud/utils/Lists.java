@@ -199,8 +199,11 @@ public final class Lists
 
     public static <E> List<E> copyOf(Collection<E> collection)
     {
-        List<E> copy = make(collection.size());
-        copy.addAll(collection);
+        int size = collection != null ? collection.size() : 1024;
+        List<E> copy = make(size);
+
+        if (collection != null)
+            copy.addAll(collection);
 
         return copy;
     }

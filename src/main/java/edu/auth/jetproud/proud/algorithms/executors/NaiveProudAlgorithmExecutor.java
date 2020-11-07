@@ -1,4 +1,4 @@
-package edu.auth.jetproud.proud.algorithms;
+package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
@@ -10,6 +10,8 @@ import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.model.meta.OutlierMetadata;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.algorithms.Distances;
+import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
@@ -62,7 +64,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         final double R = outlierQuery.r;
 
         StreamStage<List<NaiveProudData>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierAggregator((outliers, window)->{
+                components.outlierAggregation((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
 
@@ -81,7 +83,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                         // Find current node neighbours
                         List<NaiveProudData> neighbours = windowItems.stream()
                                 .filter((it)->it.id != currentNode.id)
-                                .map((it)->new Tuple<>(it, AlgorithmUtils.distanceOf(currentNode, it)))
+                                .map((it)->new Tuple<>(it, Distances.distanceOf(currentNode, it)))
                                 .filter((it)->it.second <= R)
                                 .map(Tuple::getFirst)
                                 .collect(Collectors.toList());
@@ -127,7 +129,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                 .groupingKey((it)->it.id % partitionsCount)
                 .aggregate(components.metaWindowAggregator())
                 .rollingAggregate(
-                        components.metadataAggregator((acc, window)->{
+                        components.metadataAggregation((acc, window)->{
                             int windowKey = window.getKey();
 
                             long windowStart = window.start();
@@ -148,7 +150,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                     if (oldElement == null) {
                                         outliersMap.put(el.id, el);
                                     } else {
-                                        NaiveProudData combined = AlgorithmUtils.combineElements(oldElement, el, k);
+                                        NaiveProudData combined = Naive.combineElements(oldElement, el, k);
                                         outliersMap.put(el.id, combined);
                                     }
 
@@ -175,7 +177,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                             oldElement.count_after = el.count_after;
                                             current.getOutliers().put(el.id, oldElement);
                                         } else {
-                                            NaiveProudData combinedValue = AlgorithmUtils.combineElements(oldElement, el, k);
+                                            NaiveProudData combinedValue = Naive.combineElements(oldElement, el, k);
                                             current.getOutliers().put(el.id, combinedValue);
                                         }
 
@@ -209,4 +211,21 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         //return final stage
         return super.processSingleSpace(windowedStage);
     }
+
+
+
+    private static class Naive
+    {
+
+        public static NaiveProudData combineElements(NaiveProudData one, NaiveProudData other, int k) {
+            if (one == null || other == null) {
+                return edu.auth.jetproud.utils.Utils.firstNonNull(one, other);
+            }
+
+            other.nn_before.forEach((it)->one.insert_nn_before(it, k));
+            return one;
+        }
+
+    }
+
 }
