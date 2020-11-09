@@ -151,8 +151,8 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                     }
 
                     // Declare common vars needed by AlgorithmUtils class
-                    final SlicingState finalState = current;
                     KeyedWindow<SlicingProudData> windowRef = new KeyedWindow<>(partition, windowStart, windowEnd, elements);
+                    final Slicing slicing = new Slicing(windowRef, outlierQuery, current);
 
                     //Trigger leftover slides
                     List<Long> slowTriggers = current.triggers.keySet().stream()
@@ -167,7 +167,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                                 .collect(Collectors.toList());
 
                         for (SlicingProudData el:triggerPoints) {
-                            Slicing.triggerPoint(el, windowRef, outlierQuery, ()->finalState);
+                            slicing.triggerPoint(el);
                         }
 
                         current.triggers.remove(slowTrigger);
@@ -176,7 +176,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                     //Insert new points
                     elements.stream()
                             .filter((it)->it.arrival >=windowEnd - slide && it.flag == 0)
-                            .forEach((it)-> Slicing.insertPoint(it, windowRef, outlierQuery, ()->finalState) );
+                            .forEach(slicing::insertPoint);
 
                     //Trigger previous outliers
                     List<Integer> triggeredOutliers = Lists.copyOf(current.triggers.get(OUTLIERS_TRIGGER));
@@ -184,7 +184,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
                     elements.stream()
                             .filter((it)-> triggeredOutliers.contains(it.id))
-                            .forEach((el)-> Slicing.triggerPoint(el, windowRef, outlierQuery, ()->finalState));
+                            .forEach(slicing::triggerPoint);
 
                     // Find and Report outliers
                     List<SlicingProudData> outlierData = elements.stream()
@@ -208,7 +208,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
                     elements.stream()
                             .filter((it)->triggeredIds.contains(it.id))
-                            .forEach((el)-> Slicing.triggerPoint(el, windowRef, outlierQuery, ()->finalState));
+                            .forEach(slicing::triggerPoint);
                 })
         );
 
@@ -222,8 +222,17 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
     private static class Slicing implements Serializable
     {
+        public KeyedWindow<SlicingProudData> window;
+        public OutlierQuery query;
+        public SlicingState state;
 
-        public static void triggerPoint(SlicingProudData point, KeyedWindow<SlicingProudData> window, OutlierQuery query, SupplierEx<SlicingState> stateAccessor) {
+        public Slicing(KeyedWindow<SlicingProudData> window, OutlierQuery query, SlicingState state) {
+            this.window = window;
+            this.query = query;
+            this.state = state;
+        }
+
+        public void triggerPoint(SlicingProudData point) {
             long slideDuration = query.s;
             int k = query.k;
             double r = query.r;
@@ -233,7 +242,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
             if (point.last_check != 0L)
                 nextSlide = point.last_check + slideDuration;
             else
-                nextSlide = getSlide(point.arrival, window, slideDuration);
+                nextSlide = getSlide(point.arrival, slideDuration);
 
             //Find number of neighbors
             int neighbourCount = point.count_after + point.slices_before.keySet().stream()
@@ -242,8 +251,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                     .sum();
 
             while (neighbourCount < k && nextSlide <= window.end - slideDuration) {
-                MTree<SlicingProudData> mTree = stateAccessor.get()
-                        .trees.getOrDefault(nextSlide, null);
+                MTree<SlicingProudData> mTree = state.trees.getOrDefault(nextSlide, null);
 
                 if (mTree != null) {
                     MTree<SlicingProudData>.Query treeQuery = mTree.getNearestByRange(point, r);
@@ -263,20 +271,19 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
 
             if (neighbourCount < k) {
-                stateAccessor.get()
-                        .triggers.get(-SlicingProudAlgorithmExecutor.OUTLIERS_TRIGGER)
+                state.triggers.get(-SlicingProudAlgorithmExecutor.OUTLIERS_TRIGGER)
                         .add(point.id);
             }
 
         }
 
-        private static long getSlide(long arrivalTime, KeyedWindow<SlicingProudData> window, long slideDuration) {
+        private long getSlide(long arrivalTime, long slideDuration) {
             long first = arrivalTime - window.start;
             long div = first / slideDuration;
             return window.start + (div * slideDuration);
         }
 
-        public static void insertPoint(SlicingProudData point, KeyedWindow<SlicingProudData> window, OutlierQuery query, SupplierEx<SlicingProudAlgorithmExecutor.SlicingState> stateAccessor) {
+        public void insertPoint(SlicingProudData point) {
             long slide = query.s;
             int k = query.k;
             double r = query.r;
@@ -285,8 +292,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
             long nextSlide = window.end - slide;
 
             while (neighbourCount < k && nextSlide >= window.start) {
-                MTree<SlicingProudData> mTree = stateAccessor.get()
-                        .trees.getOrDefault(nextSlide, null);
+                MTree<SlicingProudData> mTree = state.trees.getOrDefault(nextSlide, null);
 
                 if (mTree != null) {
                     boolean hasNeighbours = false;
@@ -297,7 +303,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
                         if (!hasNeighbours) {
                             hasNeighbours = true;
-                            stateAccessor.get().triggers
+                            state.triggers
                                     .get(nextSlide)
                                     .add(point.id);
                         }
@@ -322,7 +328,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
             //If it is an outlier insert into trigger list
             if (neighbourCount < k) {
-                stateAccessor.get().triggers.get(SlicingProudAlgorithmExecutor.OUTLIERS_TRIGGER)
+                state.triggers.get(SlicingProudAlgorithmExecutor.OUTLIERS_TRIGGER)
                         .add(point.id);
             }
 

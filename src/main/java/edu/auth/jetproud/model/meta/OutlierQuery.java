@@ -24,4 +24,24 @@ public class OutlierQuery
     public OutlierQuery withOutlierCount(int outlierCount) {
         return new OutlierQuery(r, k, w, s, outliers);
     }
+
+    public double getR() {
+        return r;
+    }
+
+    public int getK() {
+        return k;
+    }
+
+    public int getW() {
+        return w;
+    }
+
+    public int getS() {
+        return s;
+    }
+
+    public int getOutliers() {
+        return outliers;
+    }
 }

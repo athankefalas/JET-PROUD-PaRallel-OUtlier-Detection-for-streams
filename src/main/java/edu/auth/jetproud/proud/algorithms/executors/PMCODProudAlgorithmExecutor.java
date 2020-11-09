@@ -117,11 +117,11 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                         stateMap.put(STATE_KEY, current);
                     }
 
-                    final PMCODState finalState = current;
+                    final PMCOD pmcod = new PMCOD(current, outlierQuery);
 
                     // Insert new elements
                     for (McodProudData el: elements) {
-                        PMCOD.insertPoint(el, true, new ArrayList<>(), outlierQuery, ()->finalState);
+                        pmcod.insertPoint(el, true, new ArrayList<>());
                     }
 
                     // Find outliers
@@ -144,7 +144,7 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                             .map(Tuple::getSecond)
                             .filter((it) -> it.arrival < windowStart + slide)
                             .forEach((el)->{
-                                int deletedMC = PMCOD.deletePoint(el, outlierQuery, ()->finalState);
+                                int deletedMC = pmcod.deletePoint(el);
 
                                 if (deletedMC > 0)
                                     deletedMCs.add(deletedMC);
@@ -164,7 +164,7 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                                 .collect(Collectors.toList());
 
                         for (McodProudData el:reinsertElements) {
-                            PMCOD.insertPoint(el, false, reinsertedElementIds, outlierQuery, ()->finalState);
+                            pmcod.insertPoint(el, false, reinsertedElementIds);
                         }
                     }
 
@@ -185,23 +185,31 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
 
     private static class PMCOD
     {
-        public static void insertPoint(McodProudData el, boolean newPoint, List<Integer> reinsertIds, OutlierQuery query, SupplierEx<PMCODState> stateAccessor) {
+        public PMCODState state;
+        public OutlierQuery outlierQuery;
+
+        public PMCOD(PMCODState state, OutlierQuery outlierQuery) {
+            this.state = state;
+            this.outlierQuery = outlierQuery;
+        }
+
+        public void insertPoint(McodProudData el, boolean newPoint, List<Integer> reinsertIds) {
 
             if (!newPoint)
                 el.clear(-1);
 
-            Map<Integer, Double> closeMicroClusters = findCloseMicroClusters(el, query, stateAccessor);
+            Map<Integer, Double> closeMicroClusters = findCloseMicroClusters(el);
             Tuple<Integer, Double> closestMC = closeMicroClusters.entrySet().stream()
                     .map(Tuple::fromEntry)
                     .min(Comparator.comparingDouble(Tuple::getSecond))
                     .orElse(new Tuple<>(0, Double.MAX_VALUE));
 
-            if (closestMC.second < query.r / 2.0) {
+            if (closestMC.second < outlierQuery.r / 2.0) {
 
                 if (newPoint) { //Insert element to MC
-                    insertToMicroCluster(el, closestMC.first, true, new ArrayList<>(), query, stateAccessor);
+                    insertToMicroCluster(el, closestMC.first, true, new ArrayList<>());
                 } else {
-                    insertToMicroCluster(el, closestMC.first, false, reinsertIds, query, stateAccessor);
+                    insertToMicroCluster(el, closestMC.first, false, reinsertIds);
                 }
 
             } else { //Check against PD
@@ -209,37 +217,37 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                 List<McodProudData> NNC = new ArrayList<>();
 
                 //
-                List<Tuple<Double, McodProudData>> nearItems = stateAccessor.get().pd.values().stream()
+                List<Tuple<Double, McodProudData>> nearItems = state.pd.values().stream()
                         .map(val -> new Tuple<>(Distances.distanceOf(el, val), val))
-                        .filter((it) -> it.first <= 3 * (query.r / 2.0))
+                        .filter((it) -> it.first <= 3 * (outlierQuery.r / 2.0))
                         .collect(Collectors.toList());
 
                 for (Tuple<Double, McodProudData> item: nearItems) {
 
-                    if (item.first <= query.r) { // Update metadata
-                        addNeighbour(el, item.second, query);
+                    if (item.first <= outlierQuery.r) { // Update metadata
+                        addNeighbour(el, item.second);
 
                         if (newPoint) {
-                            addNeighbour(item.second, el, query);
+                            addNeighbour(item.second, el);
                         } else {
                             if (reinsertIds.contains(item.second.id)) {
-                                addNeighbour(item.second, el, query);
+                                addNeighbour(item.second, el);
                             }
                         }
                     }
 
-                    if (item.first <= query.r / 2.0)
+                    if (item.first <= outlierQuery.r / 2.0)
                         NC.add(item.second);
                     else
                         NNC.add(item.second);
                 }
 
 
-                if (NC.size() >= query.k) { // Create new MC
-                    createMicroCluster(el, NC, NNC, stateAccessor);
+                if (NC.size() >= outlierQuery.k) { // Create new MC
+                    createMicroCluster(el, NC, NNC);
                 } else { //Insert in PD
                     closeMicroClusters.forEach((mc, dist)-> el.Rmc.add(mc));
-                    List<Tuple<Integer, PMCODProudAlgorithmExecutor.MicroCluster>> microClusters = stateAccessor.get().mc.entrySet().stream()
+                    List<Tuple<Integer, PMCODProudAlgorithmExecutor.MicroCluster>> microClusters = state.mc.entrySet().stream()
                             .filter((mc) -> closeMicroClusters.containsKey(mc.getKey()))
                             .map(Tuple::fromEntry)
                             .collect(Collectors.toList());
@@ -248,23 +256,23 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                         for (McodProudData point:currentMicroCluster.second.points) {
                             double distance = Distances.distanceOf(el, point);
 
-                            if (distance <= query.r)
-                                addNeighbour(el, point, query);
+                            if (distance <= outlierQuery.r)
+                                addNeighbour(el, point);
                         }
                     }
-                    stateAccessor.get().pd.put(el.id, el);
 
+                    state.pd.put(el.id, el);
                 }
             }
         }
 
-        public static int deletePoint(McodProudData el, OutlierQuery outlierQuery, SupplierEx<PMCODState> stateAccessor) {
+        public int deletePoint(McodProudData el) {
             int result = 0;
 
             if (el.mc <= 0) {
-                stateAccessor.get().pd.remove(el.id);
+                state.pd.remove(el.id);
             } else {
-                PMCODProudAlgorithmExecutor.MicroCluster mc = stateAccessor.get().mc.get(el.mc);
+                PMCODProudAlgorithmExecutor.MicroCluster mc = state.mc.get(el.mc);
 
                 if (mc != null) {
                     mc.points.removeIf((it)->it.id == el.id);
@@ -278,45 +286,45 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
             return result;
         }
 
-        private static void createMicroCluster(McodProudData el, List<McodProudData> NC, List<McodProudData> NNC, SupplierEx<PMCODState> stateAccessor) {
-            int mcCounter = stateAccessor.get().mcCounter.get();
+        private void createMicroCluster(McodProudData el, List<McodProudData> NC, List<McodProudData> NNC) {
+            int mcCounter = state.mcCounter.get();
 
             for (McodProudData it:NC) {
                 it.clear(mcCounter);
-                stateAccessor.get().pd.remove(it.id);
+                state.pd.remove(it.id);
             }
 
             el.clear(mcCounter);
             NC.add(el);
 
             PMCODProudAlgorithmExecutor.MicroCluster newMC = new PMCODProudAlgorithmExecutor.MicroCluster(el.value, NC);
-            stateAccessor.get().mc.put(mcCounter, newMC);
+            state.mc.put(mcCounter, newMC);
 
             for (McodProudData it:NNC) {
                 it.Rmc.add(mcCounter);
             }
 
             mcCounter += 1;
-            stateAccessor.get().mcCounter.set(mcCounter);
+            state.mcCounter.set(mcCounter);
         }
 
-        private static void insertToMicroCluster(McodProudData el, int mc, boolean update, List<Integer> reinsertIds, OutlierQuery outlierQuery, SupplierEx<PMCODState> stateAccessor) {
+        private void insertToMicroCluster(McodProudData el, int mc, boolean update, List<Integer> reinsertIds) {
             el.clear(mc);
 
-            stateAccessor.get().mc.get(mc).points.add(el);
+            state.mc.get(mc).points.add(el);
 
-            List<McodProudData> values = stateAccessor.get().pd.values().stream()
+            List<McodProudData> values = state.pd.values().stream()
                     .filter((it)-> it.Rmc.contains(mc) && (update || reinsertIds.contains(it.id)))
                     .collect(Collectors.toList());
 
             for (McodProudData it: values) {
                 if (Distances.distanceOf(it, el) <= outlierQuery.r) {
-                    addNeighbour(it, el, outlierQuery);
+                    addNeighbour(it, el);
                 }
             }
         }
 
-        private static void addNeighbour(McodProudData el, McodProudData neighbour, OutlierQuery outlierQuery) {
+        private void addNeighbour(McodProudData el, McodProudData neighbour) {
             int k = outlierQuery.k;
 
             if (el.arrival > neighbour.arrival) {
@@ -329,11 +337,11 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
         }
 
 
-        private static Map<Integer,Double> findCloseMicroClusters(McodProudData el, OutlierQuery outlierQuery, SupplierEx<PMCODState> stateAccessor) {
+        private Map<Integer,Double> findCloseMicroClusters(McodProudData el) {
             final double R = outlierQuery.r;
             Map<Integer,Double> res = new HashMap<>();
 
-            stateAccessor.get().mc.entrySet().stream()
+            state.mc.entrySet().stream()
                     .map((entry) -> new Tuple<>(entry.getKey(), Distances.distanceOf(el, new EuclideanCoordinateList<>(entry.getValue().center))))
                     .filter((it)-> it.second <= (3 * R) / 2)
                     .forEach((it)->res.put(it.first, it.second));

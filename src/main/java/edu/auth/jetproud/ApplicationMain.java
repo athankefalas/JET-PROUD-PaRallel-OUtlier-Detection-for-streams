@@ -7,6 +7,7 @@ import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.proud.source.ProudSource;
 import edu.auth.jetproud.proud.streamstage.ProudPartitionedStreamStage;
+import edu.auth.jetproud.utils.ArrayUtils;
 import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.proud.Proud;
 import edu.auth.jetproud.proud.pipeline.ProudPipeline;
