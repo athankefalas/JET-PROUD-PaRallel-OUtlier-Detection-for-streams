@@ -208,6 +208,10 @@ public final class Lists
         return copy;
     }
 
+    public static <E> List<E> reversing(Collection<E> collection) {
+        return reverse( copyOf(collection) );
+    }
+
     @SafeVarargs
     public static <E> List<E> join(List<E> first, List<E> second, List<E> ...others)
     {
@@ -352,6 +356,26 @@ public final class Lists
         }
 
         return split;
+    }
+
+    public static List<Integer> range(int from, int to) {
+        List<Integer> range = make();
+
+        for(int r=from;r<to;r++) {
+            range.add(r);
+        }
+
+        return range;
+    }
+
+    public static List<Integer> closedRange(int from, int to) {
+        List<Integer> range = make();
+
+        for(int r=from;r<=to;r++) {
+            range.add(r);
+        }
+
+        return range;
     }
 }
 

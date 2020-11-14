@@ -14,4 +14,16 @@ public class ArrayUtils {
         return array;
     }
 
+    public static int[][][] multidimensionalWith(int value, int one, int two, int three) {
+        int[][][] array = new int[one][two][three];
+
+        for (int i=0;i<array.length;i++) {
+            for (int j=0; j < array[i].length; j++) {
+                Arrays.fill(array[i][j], value);
+            }
+        }
+
+        return array;
+    }
+
 }

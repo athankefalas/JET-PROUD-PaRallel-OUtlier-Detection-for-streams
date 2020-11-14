@@ -35,6 +35,9 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
         return id;
     }
 
+    public long getArrival() {
+        return arrival;
+    }
 
     // EuclideanCoordinate Impl
 

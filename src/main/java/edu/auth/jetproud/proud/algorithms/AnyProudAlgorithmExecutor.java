@@ -11,7 +11,6 @@ import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.contracts.ProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.proud.state.ProudStatistics;
 import edu.auth.jetproud.utils.Tuple;
@@ -72,7 +71,7 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
             case MultiQueryMultiParams:
                 return processMultiQueryParamsSpace(windowedStage);
             case MultiQueryMultiParamsMultiWindowParams:
-                return processMultiQueryMultiParamsMultiWindowParamsSpace(windowedStage);
+                return processMultiQueryParamsMultiWindowParamsSpace(windowedStage);
         }
 
         return null;
@@ -86,7 +85,7 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParams, algorithm);
     }
 
-    protected Object processMultiQueryMultiParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
+    protected Object processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams, algorithm);
     }
 }
