@@ -1,10 +1,11 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.ProudConfiguration;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-import edu.auth.jetproud.model.AmcodProudData;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.LSKYProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
@@ -21,13 +22,12 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYProudData>
 {
 
-    public static final String STATES_KEY = "STATES_KEY";
+    public static final String STATES_KEY = "SOP_STATES_KEY";
 
     static class SOPState implements Serializable
     {
@@ -60,10 +60,16 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
     }
 
     @Override
-    protected Object processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
-        createDistributableData();
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(
+                ProudSpaceOption.MultiQueryMultiParams,
+                ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams
+        );
+    }
 
+    @Override
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
+        createDistributableData();
         final DistributedMap<String, SOPState> stateMap = new DistributedMap<>(STATES_KEY);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -210,23 +216,18 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                             .forEach(sop::deletePoint);
 
 
-                    // If micro-cluster is needed as part of the distributed state remove the following line
                     stateMap.put(STATE_KEY, current);
                 })
         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processMultiQueryParamsSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
     @Override
-    protected Object processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
         createDistributableData();
-
         final DistributedMap<String, SOPState> stateMap = new DistributedMap<>(STATES_KEY);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -432,14 +433,12 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                 })
         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processMultiQueryParamsMultiWindowParamsSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
-    private final class SOP
+    private static final class SOP implements Serializable
     {
         public SOPState state;
         public KeyedWindow<LSKYProudData> window;

@@ -1,9 +1,10 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
-import com.hazelcast.function.SupplierEx;
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.datastructures.mtree.MTree;
 import edu.auth.jetproud.datastructures.mtree.ResultItem;
 import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<SlicingProudData>
 {
     public static final Long OUTLIERS_TRIGGER = -1L;
-    public static final String DATA_STATE = "DATA_STATE";
+    public static final String DATA_STATE = "SLICING_DATA_STATE";
 
     public static class SlicingState {
         public HashMap<Long, MTree<SlicingProudData>> trees;
@@ -63,11 +64,14 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
     }
 
     @Override
-    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, SlicingProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO: Impl
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(ProudSpaceOption.Single);
+    }
+
+    @Override
+    protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, SlicingProudData>>>> windowedStage) throws UnsupportedSpaceException {
         // Initialize distributed stateful data
         createDistributableData();
-
         final DistributedMap<String, SlicingState> stateMap = new DistributedMap<>(DATA_STATE);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -213,11 +217,9 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
         );
 
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processSingleSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
     private static class Slicing implements Serializable

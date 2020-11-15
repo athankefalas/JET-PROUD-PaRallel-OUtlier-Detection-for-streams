@@ -1,16 +1,17 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.ProudConfiguration;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.LSKYProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
-import edu.auth.jetproud.proud.algorithms.KeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 
 public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYProudData>
 {
-    public static final String STATES_KEY = "STATES_KEY";
+    public static final String STATES_KEY = "PSOD_STATES_KEY";
 
     static class PSODState implements Serializable
     {
@@ -59,10 +60,16 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
     }
 
     @Override
-    protected Object processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
-        createDistributableData();
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(
+                ProudSpaceOption.MultiQueryMultiParams,
+                ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams
+        );
+    }
 
+    @Override
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
+        createDistributableData();
         final DistributedMap<String, PSODState> stateMap = new DistributedMap<>(STATES_KEY);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -210,16 +217,13 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                 })
         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processMultiQueryParamsSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
     @Override
-    protected Object processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
         createDistributableData();
         final DistributedMap<String, PSODState> stateMap = new DistributedMap<>(STATES_KEY);
 
@@ -434,19 +438,16 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .filter((it)-> it.arrival < windowStart + slide)
                             .forEach(psod::deletePoint);
 
-                    // If micro-cluster is needed as part of the distributed state remove the following line
                     stateMap.put(STATE_KEY, current);
                 })
         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processMultiQueryParamsMultiWindowParamsSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
-    private static final class PSOD
+    private static final class PSOD implements Serializable
     {
         public PSODState state;
 

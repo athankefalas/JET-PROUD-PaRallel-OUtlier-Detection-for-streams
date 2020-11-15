@@ -1,8 +1,10 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.datastructures.mtree.MTree;
 import edu.auth.jetproud.datastructures.mtree.ResultItem;
 import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
@@ -17,6 +19,7 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.util.HashMap;
@@ -25,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
 {
-    public static final String DATA_STATE = "DATA_STATE";
+    public static final String DATA_STATE = "ADVANCED_EXT_DATA_STATE";
 
     public static class AdvancedExtendedState {
         public MTree<AdvancedProudData> mTree;
@@ -56,11 +59,14 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
     }
 
     @Override
-    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AdvancedProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO: Impl
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(ProudSpaceOption.Single);
+    }
+
+    @Override
+    protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AdvancedProudData>>>> windowedStage) throws UnsupportedSpaceException {
         // Initialize distributed stateful data
         createDistributableData();
-
         final DistributedMap<String, AdvancedExtendedState> stateMap = new DistributedMap<>(DATA_STATE);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -196,11 +202,9 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                 })
         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processSingleSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
 

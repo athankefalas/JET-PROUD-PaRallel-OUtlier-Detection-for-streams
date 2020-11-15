@@ -5,6 +5,7 @@ import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.model.meta.OutlierMetadata;
@@ -15,8 +16,10 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +27,7 @@ import java.util.stream.Collectors;
 
 public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<NaiveProudData>
 {
-    public static final String METADATA_STATE = "METADATA_STATE";
+    public static final String METADATA_STATE = "NAIVE_METADATA_STATE";
 
     public NaiveProudAlgorithmExecutor(ProudContext proudContext) {
         super(proudContext, ProudAlgorithmOption.Naive);
@@ -37,12 +40,17 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
     }
 
     @Override
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(ProudSpaceOption.Single);
+    }
+
+    @Override
     protected <D extends AnyProudData> NaiveProudData transform(D point) {
         return new NaiveProudData(point);
     }
 
     @Override
-    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, NaiveProudData>>>> windowedStage) throws UnsupportedSpaceException {
+    protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, NaiveProudData>>>> windowedStage) throws UnsupportedSpaceException {
         // Initialize distributed stateful data
         createDistributableData();
         final DistributedMap<String, OutlierMetadata<NaiveProudData>> state = new DistributedMap<>(METADATA_STATE);
@@ -205,16 +213,14 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                         })
                 );
 
-        // TODO: Return the proper stream stage
-        //flatten here and then to pipeline Sink
-
-        //return final stage
-        return super.processSingleSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
 
 
-    private static class Naive
+    private static class Naive implements Serializable
     {
 
         public static NaiveProudData combineElements(NaiveProudData one, NaiveProudData other, int k) {

@@ -7,6 +7,7 @@ import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.exceptions.ProudException;
 import edu.auth.jetproud.model.AnyProudData;
+import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.contracts.ProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
@@ -43,6 +44,8 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
 
     // Implementation
 
+    public abstract List<ProudSpaceOption> supportedSpaceOptions();
+
     protected abstract <D extends AnyProudData> T transform(D point);
 
     protected <D extends AnyProudData> StreamStage<Tuple<Integer, T>> prepareStage(StreamStage<PartitionedData<D>> streamStage) {
@@ -50,7 +53,7 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
     }
 
     @Override
-    public <D extends AnyProudData> Object execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException {
+    public <D extends AnyProudData> StreamStage<Tuple<Long, OutlierQuery>> execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException {
         ProudComponentBuilder functionBuilder = ProudComponentBuilder.create(proudContext);
         ProudSpaceOption spaceOption = proudContext.getProudConfiguration().getSpace();
 
@@ -77,15 +80,15 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
         return null;
     }
 
-    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
+    protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.Single, algorithm);
     }
 
-    protected Object processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParams, algorithm);
     }
 
-    protected Object processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams, algorithm);
     }
 }

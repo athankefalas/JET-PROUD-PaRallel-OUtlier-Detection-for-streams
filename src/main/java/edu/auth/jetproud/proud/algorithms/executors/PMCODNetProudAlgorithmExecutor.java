@@ -1,9 +1,10 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
-import com.hazelcast.function.SupplierEx;
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.McodProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodProudData>
 {
-    public static final String STATES_KEY = "STATES_KEY";
+    public static final String STATES_KEY = "PMCOD_NET_STATES_KEY";
 
     public static class PMCODNetMicroCluster implements Serializable
     {
@@ -74,10 +75,13 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
     }
 
     @Override
-    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McodProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
-        createDistributableData();
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(ProudSpaceOption.Single);
+    }
 
+    @Override
+    protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McodProudData>>>> windowedStage) throws UnsupportedSpaceException {
+        createDistributableData();
         final DistributedMap<String, PMCODNetState> stateMap = new DistributedMap<>(STATES_KEY);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -176,15 +180,13 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
         );
 
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processSingleSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
 
-    private static class PMCODNet
+    private static class PMCODNet implements Serializable
     {
         public PMCODNetState state;
         public OutlierQuery outlierQuery;

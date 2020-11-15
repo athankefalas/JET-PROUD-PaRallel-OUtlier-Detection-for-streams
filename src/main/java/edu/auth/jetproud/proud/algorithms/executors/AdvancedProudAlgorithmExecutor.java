@@ -5,6 +5,7 @@ import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.datastructures.mtree.MTree;
 import edu.auth.jetproud.datastructures.mtree.ResultItem;
 import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
@@ -23,14 +24,15 @@ import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
 {
 
-    public static final String DATA_STATE = "DATA_STATE";
-    public static final String METADATA_STATE = "METADATA_STATE";
+    public static final String DATA_STATE = "ADVANCED_DATA_STATE";
+    public static final String METADATA_STATE = "ADVANCED_METADATA_STATE";
 
     public static class AdvancedState {
         public MTree<AdvancedProudData> mTree;
@@ -55,6 +57,11 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
     }
 
     @Override
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(ProudSpaceOption.Single);
+    }
+
+    @Override
     public void createDistributableData() {
         super.createDistributableData();
         DistributedMap<String, AdvancedState> stateMap = new DistributedMap<>(DATA_STATE);
@@ -62,11 +69,9 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
     }
 
     @Override
-    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AdvancedProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO: Impl
+    protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AdvancedProudData>>>> windowedStage) throws UnsupportedSpaceException {
         // Initialize distributed stateful data
         createDistributableData();
-
         final DistributedMap<String, AdvancedState> stateMap = new DistributedMap<>(DATA_STATE);
         final DistributedMap<String, OutlierMetadata<AdvancedProudData>> metadataStateMap = new DistributedMap<>(METADATA_STATE);
 
@@ -263,15 +268,13 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                 })
                         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processSingleSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
 
-    private static class Advanced
+    private static class Advanced implements Serializable
     {
         public static AdvancedProudData combineOldElements(AdvancedProudData one, AdvancedProudData other, int k) {
             if (one == null || other == null) {

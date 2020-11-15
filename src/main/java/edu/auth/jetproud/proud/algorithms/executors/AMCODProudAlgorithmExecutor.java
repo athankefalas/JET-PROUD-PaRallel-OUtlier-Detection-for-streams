@@ -1,13 +1,13 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
-import com.hazelcast.function.SupplierEx;
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.ProudConfiguration;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AmcodProudData;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.model.McodProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AmcodProudData>
 {
-    public static final String STATES_KEY = "STATES_KEY";
+    public static final String STATES_KEY = "AMCOD_STATES_KEY";
 
     public static class AMCODMicroCluster implements Serializable
     {
@@ -70,16 +70,19 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
     }
 
     @Override
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(ProudSpaceOption.Single);
+    }
+
+    @Override
     public void createDistributableData() {
         super.createDistributableData();
         DistributedMap<String, AMCODState> stateMap = new DistributedMap<>(STATES_KEY);
     }
 
     @Override
-    protected Object processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AmcodProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AmcodProudData>>>> windowedStage) throws UnsupportedSpaceException {
         createDistributableData();
-
         final DistributedMap<String, AMCODState> stateMap = new DistributedMap<>(STATES_KEY);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -264,14 +267,12 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
         );
 
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processMultiQueryParamsSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
-    private static class AMCOD
+    private static class AMCOD implements Serializable
     {
         public AMCODState state;
 

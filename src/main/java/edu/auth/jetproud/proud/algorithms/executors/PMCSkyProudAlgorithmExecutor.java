@@ -1,12 +1,12 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.ProudConfiguration;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-import edu.auth.jetproud.model.AmcodProudData;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.model.LSKYProudData;
 import edu.auth.jetproud.model.McskyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudContext;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McskyProudData>
 {
-    public static final String STATES_KEY = "STATES_KEY";
+    public static final String STATES_KEY = "PMCSKY_STATES_KEY";
 
     public static class PMCSkyState implements Serializable
     {
@@ -88,8 +88,15 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
     }
 
     @Override
-    protected Object processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McskyProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(
+                ProudSpaceOption.MultiQueryMultiParams,
+                ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams
+        );
+    }
+
+    @Override
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McskyProudData>>>> windowedStage) throws UnsupportedSpaceException {
         createDistributableData();
         final DistributedMap<String, PMCSkyState> stateMap = new DistributedMap<>(STATES_KEY);
 
@@ -246,16 +253,13 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                 })
         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processMultiQueryParamsSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
     @Override
-    protected Object processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McskyProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
+    protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McskyProudData>>>> windowedStage) throws UnsupportedSpaceException {
         createDistributableData();
         final DistributedMap<String, PMCSkyState> stateMap = new DistributedMap<>(STATES_KEY);
 
@@ -434,8 +438,6 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                                 }
                             });
 
-                    /////// }}}}}
-
                     // Report outliers
                     if (!output_slide.isEmpty()) {
                         List<Integer> reportingSlides = output_slide.stream()
@@ -474,21 +476,18 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                                     pmcsky.deletePoint(el);
                             });
 
-                    // TODO: cleanup next line comment where it is not needed
                     // If micro-cluster is needed as part of the distributed state remove the following line
                     current.mcCounter = new AtomicInteger(1);
                     stateMap.put(STATE_KEY, current);
                 })
         );
 
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processMultiQueryParamsMultiWindowParamsSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
-    private abstract static class PMCSky
+    private abstract static class PMCSky implements Serializable
     {
         public PMCSkyState state;
         public KeyedWindow<McskyProudData> window;

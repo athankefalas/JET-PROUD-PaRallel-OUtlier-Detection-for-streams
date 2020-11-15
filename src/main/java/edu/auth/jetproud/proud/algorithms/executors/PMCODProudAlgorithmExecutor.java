@@ -1,15 +1,16 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
-import com.hazelcast.function.SupplierEx;
+import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.McodProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudContext;
-import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
+import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodProudData>
 {
-    public static final String STATES_KEY = "STATES_KEY";
+    public static final String STATES_KEY = "PMCOD_STATES_KEY";
 
     public static class MicroCluster implements Serializable
     {
@@ -72,10 +73,13 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
     }
 
     @Override
-    protected Object processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McodProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // TODO Impl
-        createDistributableData();
+    public List<ProudSpaceOption> supportedSpaceOptions() {
+        return Lists.of(ProudSpaceOption.Single);
+    }
 
+    @Override
+    protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McodProudData>>>> windowedStage) throws UnsupportedSpaceException {
+        createDistributableData();
         final DistributedMap<String, PMCODState> stateMap = new DistributedMap<>(STATES_KEY);
 
         final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
@@ -175,15 +179,12 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                 })
         );
 
-
-        // TODO: Return the proper stream stage
-        //flatten here ??? and then to pipeline Sink
-
-        //return final stage
-        return super.processSingleSpace(windowedStage);
+        // Return flattened stream
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        return flattenedResult;
     }
 
-    private static class PMCOD
+    private static class PMCOD implements Serializable
     {
         public PMCODState state;
         public OutlierQuery outlierQuery;
