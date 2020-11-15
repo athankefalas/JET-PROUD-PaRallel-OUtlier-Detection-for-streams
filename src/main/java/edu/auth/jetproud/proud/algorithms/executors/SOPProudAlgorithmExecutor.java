@@ -428,7 +428,6 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                             .forEach(sop::deletePoint);
 
 
-                    // If micro-cluster is needed as part of the distributed state remove the following line
                     stateMap.put(STATE_KEY, current);
                 })
         );

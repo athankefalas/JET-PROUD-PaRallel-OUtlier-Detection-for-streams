@@ -206,7 +206,6 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .forEach(psod::deletePoint);
 
 
-                    // If micro-cluster is needed as part of the distributed state remove the following line
                     stateMap.put(STATE_KEY, current);
                 })
         );

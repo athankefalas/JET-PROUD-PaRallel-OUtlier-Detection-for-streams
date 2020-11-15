@@ -10,7 +10,7 @@ public class McskyProudData extends AnyProudData
 {
 
     //Neighbor data
-    public Map<Integer, List<Tuple<Integer, Long>>> lSky;
+    public Map<Integer, List<Tuple<Integer, Long>>> lsky;
     //Skip flag
     public boolean safe_inlier;
     //Micro-cluster data
@@ -27,13 +27,13 @@ public class McskyProudData extends AnyProudData
     }
 
     private void postInit() {
-        lSky = new HashMap<>();
+        lsky = new HashMap<>();
         safe_inlier = false;
         mc = -1;
     }
 
     public void clear(int newMc) {
-        lSky.clear();
+        lsky.clear();
         mc = newMc;
     }
 
