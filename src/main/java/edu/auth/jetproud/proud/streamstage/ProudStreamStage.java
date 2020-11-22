@@ -10,11 +10,11 @@ public interface ProudStreamStage<T> extends StreamStage<T>
 {
 
     @ClassExtension(ProudStreamStageExtender.class)
-    ProudPartitionedStreamStage<AnyProudData> partitioned() throws Exception;
+    ProudPartitionedStreamStage<AnyProudData> partition() throws Exception;
 
     interface Implementor<T> {
 
-        ProudPartitionedStreamStage<AnyProudData> partitioned() throws Exception;
+        ProudPartitionedStreamStage<AnyProudData> partition() throws Exception;
 
     }
 

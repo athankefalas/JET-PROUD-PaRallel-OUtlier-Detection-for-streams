@@ -4,7 +4,7 @@ import com.hazelcast.jet.kafka.KafkaSources;
 import com.hazelcast.jet.pipeline.StreamSource;
 import edu.auth.jetproud.application.config.KafkaConfiguration;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.utils.Parser;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -22,14 +22,14 @@ public class ProudKafkaSource<T extends AnyProudData> implements ProudSource<T> 
     }
 
     private <K,V> T projectionFunction(ConsumerRecord<K,V> record) {
-        // TODO check the type of value and add actual parsing !!!!
+        // TODO: check the type of value and add actual parsing !!!!
         Object value = record.value();
         return null;
     }
 
     @Override
     public StreamSource<T> createJetSource() {
-        KafkaConfiguration kafkaConfig = proudContext.getKafkaConfiguration();
+        KafkaConfiguration kafkaConfig = proudContext.kafkaConfiguration();
 
         Properties props = new Properties();
         props.setProperty("bootstrap.servers", kafkaConfig.getKafkaBrokers());

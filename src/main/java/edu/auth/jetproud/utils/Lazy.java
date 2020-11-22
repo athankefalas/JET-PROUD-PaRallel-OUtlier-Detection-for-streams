@@ -13,7 +13,7 @@ public class Lazy<T extends Serializable>
         this.supplier = supplier;
     }
 
-    public T get() {
+    public T value() {
         if (value == null) {
             value = supplier.get();
         }

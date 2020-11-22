@@ -1,6 +1,7 @@
 package edu.auth.jetproud.proud.partitioning;
 
 import edu.auth.jetproud.model.AnyProudData;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.utils.Lists;
 
 import java.util.List;
@@ -8,13 +9,15 @@ import java.util.List;
 public class ReplicationPartitioning implements ProudPartitioning
 {
 
+    private ProudContext proudContext;
     private int partitionsCount;
 
     private ReplicationPartitioning() {
-        this(0);
+        this(null,0);
     }
 
-    public ReplicationPartitioning(int partitionsCount) {
+    public ReplicationPartitioning(ProudContext proudContext, int partitionsCount) {
+        this.proudContext = proudContext;
         this.partitionsCount = partitionsCount;
     }
 

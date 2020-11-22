@@ -1,5 +1,7 @@
 package edu.auth.jetproud.proud.partitioning;
 
+import edu.auth.jetproud.proud.context.ProudContext;
+import edu.auth.jetproud.utils.ExceptionUtils;
 import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.datastructures.vptree.VPTree;
 import edu.auth.jetproud.datastructures.vptree.distance.DistanceFunction;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 
 public class TreePartitioning implements ProudPartitioning
 {
+    private ProudContext proudContext;
+
     private int treeInitElements;
     private int partitionsCount;
     private double radius;
@@ -26,10 +30,12 @@ public class TreePartitioning implements ProudPartitioning
     private VPTree<AnyProudData, AnyProudData> tree;
 
     private TreePartitioning() throws ProudException {
-        this(0,0,0,"");
+        this(null,0,0,0,"");
     }
 
-    public TreePartitioning(int treeInitElements, int partitionsCount, double radius, String initFilePath) throws ProudException {
+    public TreePartitioning(ProudContext proudContext, int treeInitElements, int partitionsCount, double radius, String initFilePath) throws ProudException {
+        this.proudContext = proudContext;
+
         this.treeInitElements = treeInitElements;
         this.partitionsCount = partitionsCount;
         this.initFilePath = initFilePath;
@@ -116,7 +122,7 @@ public class TreePartitioning implements ProudPartitioning
         if (trueCount != 1) {
             ProudPartitioningException error
                     = ProudPartitioningException.internalPartitioningError("VP Tree partitioning error.");
-            throw new RuntimeException(error);
+            throw ExceptionUtils.sneaky(error);
         }
 
         // Parse using filter.contains("true") - i.e. partition point belongs to
@@ -127,7 +133,7 @@ public class TreePartitioning implements ProudPartitioning
         if (firstMatch == null) {
             ProudPartitioningException error
                     = ProudPartitioningException.internalPartitioningError("No positive partition found from VP Tree.");
-            throw new RuntimeException(error);
+            throw ExceptionUtils.sneaky(error);
         }
 
         Parser<Integer> integerParser = Parser.ofInt();
@@ -139,7 +145,7 @@ public class TreePartitioning implements ProudPartitioning
         if (positivePartition == null) {
             ProudPartitioningException error
                     = ProudPartitioningException.internalPartitioningError("No positive partition found from VP Tree.");
-            throw new RuntimeException(error);
+            throw ExceptionUtils.sneaky(error);
         }
 
         partitions.add(positivePartition);
@@ -154,7 +160,7 @@ public class TreePartitioning implements ProudPartitioning
         if (negativePartitions.stream().anyMatch(Objects::isNull)) {
             ProudPartitioningException error
                     = ProudPartitioningException.internalPartitioningError("Null negative partitions found in parsed VP Tree partitions.");
-            throw new RuntimeException(error);
+            throw ExceptionUtils.sneaky(error);
         }
 
         partitions.addAll(negativePartitions);

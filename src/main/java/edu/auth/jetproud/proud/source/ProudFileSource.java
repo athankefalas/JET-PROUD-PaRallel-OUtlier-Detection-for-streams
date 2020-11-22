@@ -7,7 +7,7 @@ import edu.auth.jetproud.exceptions.ProudException;
 import edu.auth.jetproud.utils.ExceptionUtils;
 import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -24,8 +24,8 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T> {
     }
 
     private FileBufferedReaderContext fileBufferedReaderContext(Processor.Context ctx) throws FileNotFoundException {
-        String fileInput = proudContext.getProudDatasetResourceConfiguration().getDatasetHome();
-        String dataset = proudContext.getProudConfiguration().getDataset();
+        String fileInput = proudContext.datasetConfiguration().getDatasetHome();
+        String dataset = proudContext.configuration().getDataset();
 
         Path path = Paths.get(fileInput, dataset, "input_20k.txt");
         InputStreamReader inputStreamReader = new FileReader(path.toFile());

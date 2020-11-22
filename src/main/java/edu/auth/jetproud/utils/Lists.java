@@ -27,6 +27,31 @@ public final class Lists
             return new LinkedList<>();
     }
 
+    public static <E> LinkedList<E> makeLinkedList()
+    {
+        return new LinkedList<>();
+    }
+
+    public static <E> LinkedList<E> makeLinkedList(int capacity)
+    {
+        return new LinkedList<>();
+    }
+
+    public static <E> ArrayList<E> makeArrayList()
+    {
+        return new ArrayList<>();
+    }
+
+    public static <E> ArrayList<E> makeArrayList(int capacity)
+    {
+        if (capacity <= 0)
+            return new ArrayList<>();
+        else if (capacity <= 256)
+            return new ArrayList<>(capacity);
+        else
+            return new ArrayList<>();
+    }
+
     @SafeVarargs
     public static <E> List<E> of(E first, E ... others)
     {

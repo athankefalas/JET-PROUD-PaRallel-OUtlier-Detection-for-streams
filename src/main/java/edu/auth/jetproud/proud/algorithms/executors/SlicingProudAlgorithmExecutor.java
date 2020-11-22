@@ -14,7 +14,7 @@ import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.SlicingProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.KeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
@@ -27,7 +27,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<SlicingProudData>
@@ -37,12 +36,12 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
     public static class SlicingState {
         public HashMap<Long, MTree<SlicingProudData>> trees;
-        public HashMap<Long, Set<Integer>> triggers;
+        public HashMap<Long, HashSet<Integer>> triggers;
 
         public SlicingState() {
         }
 
-        public SlicingState(HashMap<Long, MTree<SlicingProudData>> trees, HashMap<Long, Set<Integer>> triggers) {
+        public SlicingState(HashMap<Long, MTree<SlicingProudData>> trees, HashMap<Long, HashSet<Integer>> triggers) {
             this.trees = trees;
             this.triggers = triggers;
         }
@@ -74,21 +73,21 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
         createDistributableData();
         final DistributedMap<String, SlicingState> stateMap = new DistributedMap<>(DATA_STATE);
 
-        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
-        int w = proudContext.getProudConfiguration().getWindowSizes().get(0);
-        int s = proudContext.getProudConfiguration().getSlideSizes().get(0);
-        double r = proudContext.getProudConfiguration().getRNeighbourhood().get(0);
-        int k = proudContext.getProudConfiguration().getKNeighbours().get(0);
+        int w = proudContext.configuration().getWindowSizes().get(0);
+        int s = proudContext.configuration().getSlideSizes().get(0);
+        double r = proudContext.configuration().getRNeighbourhood().get(0);
+        int k = proudContext.configuration().getKNeighbours().get(0);
 
         final OutlierQuery outlierQuery = new OutlierQuery(r,k,w,s);
 
-        final int slide = outlierQuery.s;
-        final int K = outlierQuery.k;
-        final double R = outlierQuery.r;
+        final int slide = outlierQuery.slide;
+        final int K = outlierQuery.kNeighbours;
+        final double R = outlierQuery.range;
 
         StreamStage<List<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierDetection((outliers, window)->{
@@ -116,7 +115,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                     MTree<SlicingProudData> mTree = new MTree<>(k, DistanceFunction.euclidean(), splitFunction);
 
                     if(current == null) {
-                        HashMap<Long, Set<Integer>> triggers = new HashMap<>();
+                        HashMap<Long, HashSet<Integer>> triggers = new HashMap<>();
                         triggers.put(OUTLIERS_TRIGGER, new HashSet<>());
 
                         // Create trigger sets for window slides
@@ -235,9 +234,9 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
         }
 
         public void triggerPoint(SlicingProudData point) {
-            long slideDuration = query.s;
-            int k = query.k;
-            double r = query.r;
+            long slideDuration = query.slide;
+            int k = query.kNeighbours;
+            double r = query.range;
 
             long nextSlide;
 
@@ -286,9 +285,9 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
         }
 
         public void insertPoint(SlicingProudData point) {
-            long slide = query.s;
-            int k = query.k;
-            double r = query.r;
+            long slide = query.slide;
+            int k = query.kNeighbours;
+            double r = query.range;
 
             int neighbourCount = 0;
             long nextSlide = window.end - slide;

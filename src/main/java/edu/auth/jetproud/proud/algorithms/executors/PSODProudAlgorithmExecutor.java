@@ -9,7 +9,7 @@ import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.LSKYProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
@@ -22,6 +22,7 @@ import edu.auth.jetproud.utils.Tuple;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -72,13 +73,13 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
         createDistributableData();
         final DistributedMap<String, PSODState> stateMap = new DistributedMap<>(STATES_KEY);
 
-        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
 
-        final ProudConfiguration proudConfig = proudContext.getProudConfiguration();
+        final ProudConfiguration proudConfig = proudContext.configuration();
         final List<OutlierQuery> outlierQueries = Lists.make();
 
         for (int w : proudConfig.getWindowSizes()) {
@@ -91,16 +92,16 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
             }
         }
 
-        final int slide = outlierQueries.get(0).s;
+        final int slide = outlierQueries.get(0).slide;
 
         List<Double> R_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getR)
+                .map(OutlierQuery::getRange)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> k_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getK)
+                .map(OutlierQuery::getKNeighbours)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
@@ -199,8 +200,8 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                     for (int i=0; i < R_size; i++){
                         for (int y=0; y < k_size; y++){
                             OutlierQuery outlierQuery = new OutlierQuery(R_distinct_list.get(i), k_distinct_list.get(y),
-                                    outlierQueries.get(0).w,
-                                    outlierQueries.get(0).s
+                                    outlierQueries.get(0).window,
+                                    outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
                             outliers.add(new Tuple<>(windowEnd, outlierQuery));
                         }
@@ -227,13 +228,13 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
         createDistributableData();
         final DistributedMap<String, PSODState> stateMap = new DistributedMap<>(STATES_KEY);
 
-        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
 
-        final ProudConfiguration proudConfig = proudContext.getProudConfiguration();
+        final ProudConfiguration proudConfig = proudContext.configuration();
         final List<OutlierQuery> outlierQueries = Lists.make();
 
         for (int w : proudConfig.getWindowSizes()) {
@@ -246,28 +247,28 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
             }
         }
 
-        final int slide = proudContext.getProudInternalConfiguration().getCommonS();
+        final int slide = proudContext.internalConfiguration().getCommonS();
 
         List<Double> R_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getR)
+                .map(OutlierQuery::getRange)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> k_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getK)
+                .map(OutlierQuery::getKNeighbours)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> W_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getW)
+                .map(OutlierQuery::getWindow)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> S_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getS)
+                .map(OutlierQuery::getSlide)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
@@ -451,14 +452,14 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
     {
         public PSODState state;
 
-        public List<Double> R_distinct_list;
+        public LinkedList<Double> R_distinct_list;
 
         public double R_max;
         public int K_max;
 
         public PSOD(PSODState state, List<Double> r_distinct_list, double r_max, int k_max) {
             this.state = state;
-            R_distinct_list = r_distinct_list;
+            R_distinct_list = new LinkedList<>(r_distinct_list);
             R_max = r_max;
             K_max = k_max;
         }

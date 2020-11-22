@@ -9,7 +9,7 @@ import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AmcodProudData;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
@@ -31,16 +31,16 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
 
     public static class AMCODMicroCluster implements Serializable
     {
-        public List<Double> center;
-        public List<AmcodProudData> points;
+        public LinkedList<Double> center;
+        public LinkedList<AmcodProudData> points;
 
         public AMCODMicroCluster() {
-            this(new ArrayList<>(),new ArrayList<>());
+            this(new LinkedList<>(),new LinkedList<>());
         }
 
         public AMCODMicroCluster(List<Double> center, List<AmcodProudData> points) {
-            this.center = center;
-            this.points = points;
+            this.center = new LinkedList<>(center);
+            this.points = new LinkedList<>(points);
         }
     }
 
@@ -85,13 +85,13 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
         createDistributableData();
         final DistributedMap<String, AMCODState> stateMap = new DistributedMap<>(STATES_KEY);
 
-        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
 
-        final ProudConfiguration proudConfig = proudContext.getProudConfiguration();
+        final ProudConfiguration proudConfig = proudContext.configuration();
         final List<OutlierQuery> outlierQueries = Lists.make();
 
         for (int w : proudConfig.getWindowSizes()) {
@@ -104,16 +104,16 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
             }
         }
 
-        final int slide = outlierQueries.get(0).s;
+        final int slide = outlierQueries.get(0).slide;
 
         List<Double> R_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getR)
+                .map(OutlierQuery::getRange)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> k_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getK)
+                .map(OutlierQuery::getKNeighbours)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
@@ -221,8 +221,8 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
                             OutlierQuery outlierQuery = new OutlierQuery(
                                     R_distinct_list.get(i),
                                     k_distinct_list.get(y),
-                                    outlierQueries.get(0).w,
-                                    outlierQueries.get(0).s
+                                    outlierQueries.get(0).window,
+                                    outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
 
                             outliers.add(new Tuple<>(windowEnd, outlierQuery));

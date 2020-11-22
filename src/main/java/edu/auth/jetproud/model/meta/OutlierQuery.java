@@ -1,47 +1,54 @@
 package edu.auth.jetproud.model.meta;
 
-public class OutlierQuery
+import java.io.Serializable;
+
+public class OutlierQuery implements Serializable
 {
-    public double r; // TODO refactor -> range
-    public int k; // TODO refactor -> kNeighbours
+    public double range;
+    public int kNeighbours;
 
-    public int w; // TODO refactor -> window
-    public int s; // TODO refactor s -> slide
-    public int outliers; // TODO refactor outliers -> outlierCount
+    public int window;
+    public int slide;
 
-    public OutlierQuery(double r, int k, int w, int s) {
-        this(r, k, w, s, 0);
+    public long outlierCount;
+
+    public OutlierQuery(double range, int kNeighbours, int window, int slide) {
+        this(range, kNeighbours, window, slide, 0);
     }
 
-    private OutlierQuery(double r, int k, int w, int s, int outliers) {
-        this.r = r;
-        this.k = k;
-        this.w = w;
-        this.s = s;
-        this.outliers = outliers;
+    private OutlierQuery(double range, int kNeighbours, int window, int slide, long outlierCount) {
+        this.range = range;
+        this.kNeighbours = kNeighbours;
+        this.window = window;
+        this.slide = slide;
+        this.outlierCount = outlierCount;
     }
 
-    public OutlierQuery withOutlierCount(int outlierCount) {
-        return new OutlierQuery(r, k, w, s, outliers);
+    public OutlierQuery withOutlierCount(long outlierCount) {
+        return new OutlierQuery(range, kNeighbours, window, slide, this.outlierCount);
     }
 
-    public double getR() {
-        return r;
+    public double getRange() {
+        return range;
     }
 
-    public int getK() {
-        return k;
+    public int getKNeighbours() {
+        return kNeighbours;
     }
 
-    public int getW() {
-        return w;
+    public int getWindow() {
+        return window;
     }
 
-    public int getS() {
-        return s;
+    public int getSlide() {
+        return slide;
     }
 
-    public int getOutliers() {
-        return outliers;
+    public long getOutlierCount() {
+        return outlierCount;
+    }
+
+    public boolean isInSameSpace(OutlierQuery other) {
+        return kNeighbours == other.kNeighbours && range == other.range && window == other.window && slide == other.slide;
     }
 }

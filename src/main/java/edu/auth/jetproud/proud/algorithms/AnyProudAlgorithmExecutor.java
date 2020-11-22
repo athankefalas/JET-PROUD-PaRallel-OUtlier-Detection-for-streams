@@ -8,7 +8,7 @@ import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.exceptions.ProudException;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.contracts.ProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
@@ -55,10 +55,10 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
     @Override
     public <D extends AnyProudData> StreamStage<Tuple<Long, OutlierQuery>> execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException {
         ProudComponentBuilder functionBuilder = ProudComponentBuilder.create(proudContext);
-        ProudSpaceOption spaceOption = proudContext.getProudConfiguration().getSpace();
+        ProudSpaceOption spaceOption = proudContext.configuration().getSpace();
 
-        long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        long windowSlideSize = proudContext.getProudInternalConfiguration().getCommonS();
+        long windowSize = proudContext.internalConfiguration().getCommonW();
+        long windowSlideSize = proudContext.internalConfiguration().getCommonS();
 
 
         StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage = prepareStage(streamStage)

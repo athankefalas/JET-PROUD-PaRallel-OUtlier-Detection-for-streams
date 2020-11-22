@@ -8,7 +8,7 @@ import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.McodProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
@@ -29,17 +29,17 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
 
     public static class PMCODNetMicroCluster implements Serializable
     {
-        public List<Double> center;
-        public List<McodProudData> points;
+        public LinkedList<Double> center;
+        public LinkedList<McodProudData> points;
 
         public PMCODNetMicroCluster() {
-            this.points = new ArrayList<>();
-            this.center = new ArrayList<>();
+            this.points = new LinkedList<>();
+            this.center = new LinkedList<>();
         }
 
         public PMCODNetMicroCluster(List<Double> center, List<McodProudData> points) {
-            this.center = center;
-            this.points = points;
+            this.center = new LinkedList<>(center);
+            this.points = new LinkedList<>(points);
         }
     }
 
@@ -84,21 +84,21 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
         createDistributableData();
         final DistributedMap<String, PMCODNetState> stateMap = new DistributedMap<>(STATES_KEY);
 
-        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
-        int w = proudContext.getProudConfiguration().getWindowSizes().get(0);
-        int s = proudContext.getProudConfiguration().getSlideSizes().get(0);
-        double r = proudContext.getProudConfiguration().getRNeighbourhood().get(0);
-        int k = proudContext.getProudConfiguration().getKNeighbours().get(0);
+        int w = proudContext.configuration().getWindowSizes().get(0);
+        int s = proudContext.configuration().getSlideSizes().get(0);
+        double r = proudContext.configuration().getRNeighbourhood().get(0);
+        int k = proudContext.configuration().getKNeighbours().get(0);
 
         final OutlierQuery outlierQuery = new OutlierQuery(r,k,w,s);
 
-        final int slide = outlierQuery.s;
-        final int K = outlierQuery.k;
-        final double R = outlierQuery.r;
+        final int slide = outlierQuery.slide;
+        final int K = outlierQuery.kNeighbours;
+        final double R = outlierQuery.range;
 
         StreamStage<List<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierDetection((outliers, window)->{
@@ -162,7 +162,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                             })
                             .count();
 
-                    OutlierQuery queryCopy = outlierQuery.withOutlierCount((int) outliersCount);
+                    OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
                     outliers.add(new Tuple<>(windowEnd, queryCopy));
 
 
@@ -207,7 +207,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                     .min(Comparator.comparingDouble(Tuple::getSecond))
                     .orElse(new Tuple<>(0, Double.MAX_VALUE));
 
-            if (closestMC.second < outlierQuery.r / 2.0) {
+            if (closestMC.second < outlierQuery.range / 2.0) {
 
                 if (newPoint) { //Insert element to MC
                     insertToMicroCluster(el, closestMC.first, true, new ArrayList<>());
@@ -222,12 +222,12 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                 //
                 List<Tuple<Double, McodProudData>> nearItems = state.pd.values().stream()
                         .map(val -> new Tuple<>(Distances.distanceOf(el, val), val))
-                        .filter((it) -> it.first <= 3 * (outlierQuery.r / 2.0))
+                        .filter((it) -> it.first <= 3 * (outlierQuery.range / 2.0))
                         .collect(Collectors.toList());
 
                 for (Tuple<Double, McodProudData> item: nearItems) {
 
-                    if (item.first <= outlierQuery.r) { // Update metadata
+                    if (item.first <= outlierQuery.range) { // Update metadata
                         addNeighbour(el, item.second);
 
                         if (newPoint) {
@@ -239,14 +239,14 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                         }
                     }
 
-                    if (item.first <= outlierQuery.r / 2.0)
+                    if (item.first <= outlierQuery.range / 2.0)
                         NC.add(item.second);
                     else
                         NNC.add(item.second);
                 }
 
 
-                if (NC.size() >= outlierQuery.k) { // Create new MC
+                if (NC.size() >= outlierQuery.kNeighbours) { // Create new MC
                     createMicroCluster(el, NC, NNC);
                 } else { //Insert in PD
                     closeMicroClusters.forEach((mc, dist)-> el.Rmc.add(mc));
@@ -259,7 +259,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                         for (McodProudData point:currentMicroCluster.second.points) {
                             double distance = Distances.distanceOf(el, point);
 
-                            if (distance <= outlierQuery.r)
+                            if (distance <= outlierQuery.range)
                                 addNeighbour(el, point);
                         }
                     }
@@ -280,7 +280,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                 if (mc != null) {
                     mc.points.removeIf((it)->it.id == el.id);
 
-                    if (mc.points.size() <= outlierQuery.k) {
+                    if (mc.points.size() <= outlierQuery.kNeighbours) {
                         result = el.mc;
                     }
                 }
@@ -321,14 +321,14 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                     .collect(Collectors.toList());
 
             for (McodProudData it: values) {
-                if (Distances.distanceOf(it, el) <= outlierQuery.r) {
+                if (Distances.distanceOf(it, el) <= outlierQuery.range) {
                     addNeighbour(it, el);
                 }
             }
         }
 
         private void addNeighbour(McodProudData el, McodProudData neighbour) {
-            int k = outlierQuery.k;
+            int k = outlierQuery.kNeighbours;
 
             if (el.arrival > neighbour.arrival) {
                 el.insert_nn_before(neighbour.arrival, k);
@@ -340,7 +340,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
         }
 
         private Map<Integer,Double> findCloseMicroClusters(McodProudData el) {
-            final double R = outlierQuery.r;
+            final double R = outlierQuery.range;
             Map<Integer,Double> res = new HashMap<>();
 
             state.mc.entrySet().stream()

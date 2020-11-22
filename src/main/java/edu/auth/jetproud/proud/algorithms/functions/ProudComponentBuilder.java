@@ -5,7 +5,7 @@ import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.aggregate.AggregateOperation1;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -90,5 +90,7 @@ public final class ProudComponentBuilder
                 .andAccumulate(outlierDetector(accumulateFunction))
                 .andExportFinish((it)->it);
     }
+
+    // Sinks
 
 }

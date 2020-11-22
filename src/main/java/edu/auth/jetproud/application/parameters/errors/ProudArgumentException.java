@@ -29,6 +29,10 @@ public class ProudArgumentException extends ProudException {
         return new ProudArgumentException("Switch '"+_switch+"' is missing from the given arguments.");
     }
 
+    public static ProudArgumentException missing(String value, String container) {
+        return new ProudArgumentException("Failed to find required value '"+value+"' in "+container+".");
+    }
+
     public static ProudArgumentException invalid(String message) {
         return new ProudArgumentException("Illegal arguments: "+message+".");
     }

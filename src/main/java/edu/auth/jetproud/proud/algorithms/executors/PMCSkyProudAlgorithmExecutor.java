@@ -9,7 +9,7 @@ import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.McskyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
-import edu.auth.jetproud.proud.ProudContext;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.KeyedWindow;
@@ -59,16 +59,16 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
     public static class PMCSkyCluster implements Serializable
     {
-        public List<Double> center;
-        public List<Integer> points;
+        public LinkedList<Double> center;
+        public LinkedList<Integer> points;
 
         public PMCSkyCluster(List<Double> center) {
             this(center, Lists.make());
         }
 
         public PMCSkyCluster(List<Double> center, List<Integer> points) {
-            this.center = center;
-            this.points = points;
+            this.center = new LinkedList<>(center);
+            this.points = new LinkedList<>(points);
         }
     }
 
@@ -100,13 +100,13 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         createDistributableData();
         final DistributedMap<String, PMCSkyState> stateMap = new DistributedMap<>(STATES_KEY);
 
-        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
 
-        final ProudConfiguration proudConfig = proudContext.getProudConfiguration();
+        final ProudConfiguration proudConfig = proudContext.configuration();
         final List<OutlierQuery> outlierQueries = Lists.make();
 
         for (int w : proudConfig.getWindowSizes()) {
@@ -119,16 +119,16 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             }
         }
 
-        final int slide = outlierQueries.get(0).s;
+        final int slide = outlierQueries.get(0).slide;
 
         List<Double> R_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getR)
+                .map(OutlierQuery::getRange)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> k_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getK)
+                .map(OutlierQuery::getKNeighbours)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
@@ -233,8 +233,8 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     for (int i=0; i < R_size; i++){
                         for (int y=0; y < k_size; y++){
                             OutlierQuery outlierQuery = new OutlierQuery(R_distinct_list.get(i), k_distinct_list.get(y),
-                                    outlierQueries.get(0).w,
-                                    outlierQueries.get(0).s
+                                    outlierQueries.get(0).window,
+                                    outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
                             outliers.add(new Tuple<>(windowEnd, outlierQuery));
                         }
@@ -246,7 +246,6 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                             .filter((it)-> it.arrival < windowStart + slide)
                             .forEach(pmcsky::deletePoint);
 
-                    // TODO: cleanup next line comment where it is not needed
                     // If micro-cluster is needed as part of the distributed state remove the following line
                     current.mcCounter = new AtomicInteger(1);
                     stateMap.put(STATE_KEY, current);
@@ -263,13 +262,13 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         createDistributableData();
         final DistributedMap<String, PMCSkyState> stateMap = new DistributedMap<>(STATES_KEY);
 
-        final long windowSize = proudContext.getProudInternalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.getProudInternalConfiguration().getPartitions();
+        final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
         // Create Outlier Query - Queries
 
-        final ProudConfiguration proudConfig = proudContext.getProudConfiguration();
+        final ProudConfiguration proudConfig = proudContext.configuration();
         final List<OutlierQuery> outlierQueries = Lists.make();
 
         for (int w : proudConfig.getWindowSizes()) {
@@ -282,28 +281,28 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             }
         }
 
-        final int slide = proudContext.getProudInternalConfiguration().getCommonS();
+        final int slide = proudContext.internalConfiguration().getCommonS();
 
         List<Double> R_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getR)
+                .map(OutlierQuery::getRange)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> k_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getK)
+                .map(OutlierQuery::getKNeighbours)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> W_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getW)
+                .map(OutlierQuery::getWindow)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
         List<Integer> S_distinct_list = outlierQueries.stream()
-                .map(OutlierQuery::getS)
+                .map(OutlierQuery::getSlide)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
@@ -492,7 +491,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         public PMCSkyState state;
         public KeyedWindow<McskyProudData> window;
 
-        public List<Double> R_distinct_list;
+        public LinkedList<Double> R_distinct_list;
 
         public int slide;
 
@@ -503,7 +502,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         public PMCSky(PMCSkyState state, KeyedWindow<McskyProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_max) {
             this.state = state;
             this.window = window;
-            R_distinct_list = r_distinct_list;
+            R_distinct_list = new LinkedList<>(r_distinct_list);
             this.slide = slide;
             R_min = r_min;
             R_max = r_max;

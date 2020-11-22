@@ -4,11 +4,13 @@ import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.exceptions.ProudException;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.proud.ProudContext;
-import edu.auth.jetproud.proud.algorithms.executors.NaiveProudAlgorithmExecutor;
+import edu.auth.jetproud.model.meta.OutlierQuery;
+import edu.auth.jetproud.proud.context.ProudContext;
+import edu.auth.jetproud.proud.algorithms.executors.*;
 import edu.auth.jetproud.proud.algorithms.exceptions.NotImplementedAlgorithmException;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.utils.ExceptionUtils;
+import edu.auth.jetproud.utils.Tuple;
 
 public interface ProudAlgorithmExecutor
 {
@@ -16,35 +18,33 @@ public interface ProudAlgorithmExecutor
 
     void createDistributableData();
 
-    // TODO: Change Object to StreamStage<?>
-    <D extends AnyProudData> Object execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException;
+    <D extends AnyProudData> StreamStage<Tuple<Long, OutlierQuery>> execute(StreamStage<PartitionedData<D>> streamStage) throws ProudException;
 
 
-    // TODO: Add implementations
     static ProudAlgorithmExecutor create(ProudContext proudContext) {
-        ProudAlgorithmOption algorithmOption = proudContext.getProudConfiguration().getAlgorithm();
+        ProudAlgorithmOption algorithmOption = proudContext.configuration().getAlgorithm();
 
         switch (algorithmOption) {
             case Naive:
                 return new NaiveProudAlgorithmExecutor(proudContext);
             case Advanced:
-                break;
+                return new AdvancedProudAlgorithmExecutor(proudContext);
             case AdvancedExtended:
-                break;
+                return new AdvancedExtendedProudAlgorithmExecutor(proudContext);
             case Slicing:
-                break;
+                return new SlicingProudAlgorithmExecutor(proudContext);
             case PMCod:
-                break;
+                return new PMCODProudAlgorithmExecutor(proudContext);
             case PMCodNet:
-                break;
+                return new PMCODNetProudAlgorithmExecutor(proudContext);
             case AMCod:
-                break;
+                return new AMCODProudAlgorithmExecutor(proudContext);
             case Sop:
-                break;
+                return new SOPProudAlgorithmExecutor(proudContext);
             case PSod:
-                break;
+                return new PSODProudAlgorithmExecutor(proudContext);
             case PMCSky:
-                break;
+                return new PMCSkyProudAlgorithmExecutor(proudContext);
         }
 
         throw ExceptionUtils.sneaky(new NotImplementedAlgorithmException(algorithmOption));

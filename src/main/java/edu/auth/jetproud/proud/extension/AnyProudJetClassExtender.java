@@ -1,7 +1,6 @@
 package edu.auth.jetproud.proud.extension;
 
-import edu.auth.jetproud.proud.ProudContext;
-import edu.auth.jetproud.proud.extension.ClassExtender;
+import edu.auth.jetproud.proud.context.ProudContext;
 
 import java.util.UUID;
 

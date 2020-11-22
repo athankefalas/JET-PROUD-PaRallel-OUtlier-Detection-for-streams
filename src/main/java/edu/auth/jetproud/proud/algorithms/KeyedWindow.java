@@ -4,6 +4,7 @@ import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.utils.Lists;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
 
 public class KeyedWindow<T extends AnyProudData> implements Serializable
@@ -13,7 +14,7 @@ public class KeyedWindow<T extends AnyProudData> implements Serializable
     public long start;
     public long end;
 
-    public List<T> data;
+    public LinkedList<T> data;
 
     public KeyedWindow(int partition, long start, long end) {
         this(partition, start, end, Lists.make());
@@ -23,7 +24,7 @@ public class KeyedWindow<T extends AnyProudData> implements Serializable
         this.partition = partition;
         this.start = start;
         this.end = end;
-        this.data = data;
+        this.data = new LinkedList<>(data);
     }
 
     @Override

@@ -12,19 +12,26 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
+        <jet.version>4.2</jet.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.hazelcast.jet</groupId>
             <artifactId>hazelcast-jet</artifactId>
-            <version>4.2</version>
+            <version>${jet.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.hazelcast.jet</groupId>
             <artifactId>hazelcast-jet-kafka</artifactId>
-            <version>4.2</version>
+            <version>${jet.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hazelcast.jet.contrib</groupId>
+            <artifactId>influxdb</artifactId>
+            <version>0.2</version>
         </dependency>
 
     </dependencies>

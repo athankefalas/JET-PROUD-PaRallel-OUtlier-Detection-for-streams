@@ -6,6 +6,8 @@ import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudPartitioningOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.application.parameters.errors.ProudArgumentException;
+import edu.auth.jetproud.proud.partitioning.GridPartitioning;
+import edu.auth.jetproud.proud.partitioning.gridresolvers.DefaultGridPartitioners;
 import edu.auth.jetproud.utils.Lists;
 
 import java.io.Serializable;
@@ -41,6 +43,8 @@ public class ProudConfiguration implements Serializable {
 
     @ProudParameterValue(Switch = "--partitioning")
     private ProudPartitioningOption partitioning;
+
+    private GridPartitioning.GridPartitioner customGridPartitioner;
 
     @ProudParameterValue(Switch = "--tree_init")
     private Integer treeInitialNodeCount;
@@ -113,6 +117,14 @@ public class ProudConfiguration implements Serializable {
 
     public void setPartitioning(ProudPartitioningOption partitioning) {
         this.partitioning = partitioning;
+    }
+
+    public GridPartitioning.GridPartitioner getCustomGridPartitioner() {
+        return customGridPartitioner;
+    }
+
+    public void setCustomGridPartitioner(GridPartitioning.GridPartitioner customGridPartitioner) {
+        this.customGridPartitioner = customGridPartitioner;
     }
 
     public Integer getTreeInitialNodeCount() {
@@ -190,6 +202,16 @@ public class ProudConfiguration implements Serializable {
         if (partitioning != ProudPartitioningOption.Tree && treeInitialNodeCount != null) {
             // --tree_init REQUIRES partitioning == Tree
             throw ProudArgumentException.invalid("Initial tree node count can not be used with "+partitioning+" partitioning.");
+        }
+
+        // Grid partitioning requires a grid partitioning function
+        // if a predefined one cannot be used throw an error
+        if (partitioning == ProudPartitioningOption.Grid) {
+            boolean canUseDefaultGridPartitioner = DefaultGridPartitioners.forDatasetNamed(dataset) != null;
+
+            if (!canUseDefaultGridPartitioner && customGridPartitioner == null) {
+                throw ProudArgumentException.missing("grid partitioning function", "configuration.customGridPartitioner");
+            }
         }
 
     }
