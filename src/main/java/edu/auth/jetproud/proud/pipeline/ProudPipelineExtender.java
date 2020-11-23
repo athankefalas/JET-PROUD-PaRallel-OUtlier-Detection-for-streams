@@ -19,6 +19,11 @@ public class ProudPipelineExtender extends AnyProudJetClassExtender<Pipeline> im
 
 
     @Override
+    public ProudContext proudContext() {
+        return proudContext;
+    }
+
+    @Override
     public ProudStreamStage<AnyProudData> readFrom(ProudSource<AnyProudData> source) {
         long allowedLag = proudContext.internalConfiguration().getAllowedLateness();
         StreamStage<AnyProudData> jetStreamStage = source.readInto(target)

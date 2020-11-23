@@ -3,7 +3,7 @@ package edu.auth.jetproud.proud.context;
 import edu.auth.jetproud.application.config.InfluxDBConfiguration;
 import edu.auth.jetproud.application.config.KafkaConfiguration;
 import edu.auth.jetproud.application.config.ProudConfiguration;
-import edu.auth.jetproud.application.config.ProudDatasetConfiguration;
+import edu.auth.jetproud.application.config.DatasetConfiguration;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudPartitioningOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
@@ -36,21 +36,21 @@ public class ProudConfigurationBuilder
     private ProudContext.OutputType outputType = ProudContext.OutputType.Unknown;
 
     private ProudConfiguration proudConfiguration;
-    private ProudDatasetConfiguration proudDatasetConfiguration;
+    private DatasetConfiguration datasetConfiguration;
 
     private KafkaConfiguration kafkaConfiguration;
     private InfluxDBConfiguration influxDBConfiguration;
 
     protected ProudConfigurationBuilder() {
         proudConfiguration = new ProudConfiguration();
-        proudDatasetConfiguration = ProudDatasetConfiguration.fromSystemEnvironment();
+        datasetConfiguration = DatasetConfiguration.fromSystemEnvironment();
         kafkaConfiguration = KafkaConfiguration.fromSystemEnvironment();
         influxDBConfiguration = InfluxDBConfiguration.fromSystemEnvironment();
     }
 
     protected ProudConfigurationBuilder(ProudConfiguration proudConfiguration) {
         this.proudConfiguration = proudConfiguration;
-        proudDatasetConfiguration = ProudDatasetConfiguration.fromSystemEnvironment();
+        datasetConfiguration = DatasetConfiguration.fromSystemEnvironment();
         kafkaConfiguration = KafkaConfiguration.fromSystemEnvironment();
         influxDBConfiguration = InfluxDBConfiguration.fromSystemEnvironment();
     }
@@ -133,7 +133,7 @@ public class ProudConfigurationBuilder
 
     @Override
     public PartitioningProudConfigBuilder locatedIn(String directory) {
-        proudDatasetConfiguration.setDatasetHome(directory);
+        datasetConfiguration.setDatasetHome(directory);
         inputType = ProudContext.InputType.File;
         return this;
     }
@@ -224,7 +224,7 @@ public class ProudConfigurationBuilder
 
     @Override
     public Proud build() {
-        Proud proud = new Proud(proudConfiguration, kafkaConfiguration, influxDBConfiguration, proudDatasetConfiguration);
+        Proud proud = new Proud(proudConfiguration, kafkaConfiguration, influxDBConfiguration, datasetConfiguration);
 
         try {
             proud.configuration().validateConfiguration();

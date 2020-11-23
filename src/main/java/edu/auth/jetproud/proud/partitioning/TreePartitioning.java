@@ -33,6 +33,10 @@ public class TreePartitioning implements ProudPartitioning
         this(null,0,0,0,"");
     }
 
+    public TreePartitioning(ProudContext proudContext, String initFilePath) throws ProudException {
+        this(proudContext, proudContext.configuration().getTreeInitialNodeCount(), proudContext.internalConfiguration().getPartitions(), proudContext.internalConfiguration().getCommonR(), initFilePath);
+    }
+
     public TreePartitioning(ProudContext proudContext, int treeInitElements, int partitionsCount, double radius, String initFilePath) throws ProudException {
         this.proudContext = proudContext;
 

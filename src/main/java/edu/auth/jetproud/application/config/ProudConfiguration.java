@@ -187,6 +187,15 @@ public class ProudConfiguration implements Serializable {
 
     public void validateConfiguration() throws ProudArgumentException {
         // Validate the consistency of the configuration values
+
+        //// Algorithm + Space
+
+        if (!algorithm.isSupportedInSpace(space)) {
+            // Check space is supported by algorithm
+            throw ProudArgumentException.invalid("Algorithm "+algorithm+" does not support query space "+space+".");
+        }
+
+        //// Algorithm + Partitioning
         List<ProudAlgorithmOption> replicationAlgorithms = Lists.of(ProudAlgorithmOption.Naive, ProudAlgorithmOption.Advanced);
 
         if (replicationAlgorithms.contains(algorithm) && partitioning != ProudPartitioningOption.Replication) {

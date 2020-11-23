@@ -16,6 +16,10 @@ public class ReplicationPartitioning implements ProudPartitioning
         this(null,0);
     }
 
+    public ReplicationPartitioning(ProudContext proudContext) {
+        this(proudContext, proudContext.internalConfiguration().getPartitions());
+    }
+
     public ReplicationPartitioning(ProudContext proudContext, int partitionsCount) {
         this.proudContext = proudContext;
         this.partitionsCount = partitionsCount;

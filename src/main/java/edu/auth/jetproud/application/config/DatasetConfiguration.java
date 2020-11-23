@@ -1,16 +1,16 @@
 package edu.auth.jetproud.application.config;
 
-public class ProudDatasetConfiguration
+public class DatasetConfiguration
 {
     public static final String DATASET_HOME_PROPERTY = "JOB_INPUT";
 
     private String datasetHome;
 
-    private ProudDatasetConfiguration() {
+    private DatasetConfiguration() {
         this("");
     }
 
-    public ProudDatasetConfiguration(String datasetHome) {
+    public DatasetConfiguration(String datasetHome) {
         this.datasetHome = datasetHome;
     }
 
@@ -22,15 +22,15 @@ public class ProudDatasetConfiguration
         this.datasetHome = datasetHome;
     }
 
-    public static ProudDatasetConfiguration fromSystemEnvironment() {
-        ProudDatasetConfiguration config = new ProudDatasetConfiguration();
+    public static DatasetConfiguration fromSystemEnvironment() {
+        DatasetConfiguration config = new DatasetConfiguration();
         config.datasetHome = System.getenv(DATASET_HOME_PROPERTY);
 
         return config;
     }
 
-    public static ProudDatasetConfiguration fromSystemProperties() {
-        ProudDatasetConfiguration config = new ProudDatasetConfiguration();
+    public static DatasetConfiguration fromSystemProperties() {
+        DatasetConfiguration config = new DatasetConfiguration();
         config.datasetHome = System.getProperty(DATASET_HOME_PROPERTY);
 
         return config;

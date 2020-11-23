@@ -3,6 +3,14 @@ package edu.auth.jetproud.proud.state;
 import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.utils.Lazy;
 
+
+/**
+ * ProudStatistics
+ *
+ * A static container for holding the slide count and CPU time distributed counters.
+ * @Deprecated Use the built in Metrics API
+ */
+@Deprecated
 public final class ProudStatistics
 {
 

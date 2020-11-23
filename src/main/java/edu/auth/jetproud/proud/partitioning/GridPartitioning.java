@@ -60,6 +60,10 @@ public class GridPartitioning implements ProudPartitioning
         this(null,-1, 0, null);
     }
 
+    public GridPartitioning(ProudContext proudContext, GridPartitioner gridPartitioner) {
+        this(proudContext, proudContext.internalConfiguration().getPartitions(), proudContext.internalConfiguration().getCommonR(), gridPartitioner);
+    }
+
     public GridPartitioning(ProudContext proudContext, int partitionsCount, double range, GridPartitioner gridPartitioner) {
         this.proudContext = proudContext;
 

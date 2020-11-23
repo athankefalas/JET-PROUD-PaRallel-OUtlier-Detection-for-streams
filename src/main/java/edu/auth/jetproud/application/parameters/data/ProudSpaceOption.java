@@ -5,7 +5,6 @@ import edu.auth.jetproud.utils.Parser;
 import java.util.Arrays;
 
 public enum ProudSpaceOption {
-    None(""),
     Single("single"),
     MultiQueryMultiParams("rk"),
     MultiQueryMultiParamsMultiWindowParams("rkws");

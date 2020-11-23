@@ -1,8 +1,12 @@
 package edu.auth.jetproud.application.parameters.data;
 
+import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Parser;
 
 import java.util.Arrays;
+import java.util.List;
+
+import static edu.auth.jetproud.application.parameters.data.ProudSpaceOption.*;
 
 public enum ProudAlgorithmOption {
 
@@ -14,22 +18,27 @@ public enum ProudAlgorithmOption {
     PMCod("pmcod"),
     PMCodNet("pmcod_net"),
     // Multi Query Space
-    AMCod("amcod", true),
-    Sop("sop", true),
-    PSod("psod", true),
-    PMCSky("pmcsky", true);
+    AMCod("amcod", Lists.of(MultiQueryMultiParams)),
+    // Multi Query + Multi Query Multi Window Spaces
+    Sop("sop", Lists.of(MultiQueryMultiParams, MultiQueryMultiParamsMultiWindowParams)),
+    PSod("psod", Lists.of(MultiQueryMultiParams, MultiQueryMultiParamsMultiWindowParams)),
+    PMCSky("pmcsky", Lists.of(MultiQueryMultiParams, MultiQueryMultiParamsMultiWindowParams));
 
 
     private String value;
-    private boolean isMultiQueryAlgorithm;
+    private List<ProudSpaceOption> supportedSpaces;
 
     ProudAlgorithmOption(String value) {
-        this(value, false);
+        this(value, Lists.of(Single));
     }
 
-    ProudAlgorithmOption(String value, boolean isMultiQueryAlgorithm) {
+    ProudAlgorithmOption(String value, List<ProudSpaceOption> supportedSpaces) {
         this.value = value;
-        this.isMultiQueryAlgorithm = isMultiQueryAlgorithm;
+        this.supportedSpaces = Lists.copyOf(supportedSpaces);
+    }
+
+    public boolean isSupportedInSpace(ProudSpaceOption spaceOption) {
+        return supportedSpaces.stream().anyMatch((space)->space == spaceOption);
     }
 
     public static Parser<ProudAlgorithmOption> parser() {

@@ -67,8 +67,6 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
                 .aggregate(functionBuilder.windowAggregator());
 
         switch (spaceOption) {
-            case None:
-                throw new UnsupportedSpaceException(spaceOption, algorithm);
             case Single:
                 return processSingleSpace(windowedStage);
             case MultiQueryMultiParams:

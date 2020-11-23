@@ -4,7 +4,7 @@ import edu.auth.jetproud.utils.GCD;
 
 import java.util.List;
 
-public final class ProudInternalConfiguration {
+public final class InternalConfiguration {
 
     private int partitions;
 
@@ -15,7 +15,7 @@ public final class ProudInternalConfiguration {
     private int allowedLateness;
 
 
-    private ProudInternalConfiguration() {
+    private InternalConfiguration() {
 
     }
 
@@ -61,8 +61,8 @@ public final class ProudInternalConfiguration {
 
     // Static init
 
-    public static ProudInternalConfiguration createFrom(ProudConfiguration proudConfiguration) {
-        ProudInternalConfiguration config = new ProudInternalConfiguration();
+    public static InternalConfiguration createFrom(ProudConfiguration proudConfiguration) {
+        InternalConfiguration config = new InternalConfiguration();
 
         config.partitions = 16;
 

@@ -13,11 +13,11 @@ public interface ProudContext extends Serializable {
 
     ProudConfiguration configuration();
 
-    ProudDatasetConfiguration datasetConfiguration();
+    DatasetConfiguration datasetConfiguration();
     KafkaConfiguration kafkaConfiguration();
     InfluxDBConfiguration influxDBConfiguration();
 
-    ProudInternalConfiguration internalConfiguration();
+    InternalConfiguration internalConfiguration();
 
     enum InputType {
         Unknown, File, Kafka

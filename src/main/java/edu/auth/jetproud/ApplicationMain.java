@@ -1,12 +1,10 @@
 package edu.auth.jetproud;
 
 import com.hazelcast.jet.Job;
-import edu.auth.jetproud.proud.context.Proud;
 import edu.auth.jetproud.proud.ProudExecutor;
+import edu.auth.jetproud.proud.context.Proud;
 import edu.auth.jetproud.proud.pipeline.ProudPipeline;
 import edu.auth.jetproud.proud.source.ProudSource;
-
-import java.util.Random;
 
 public class ApplicationMain {
 

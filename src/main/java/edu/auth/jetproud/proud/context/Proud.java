@@ -8,8 +8,6 @@ import edu.auth.jetproud.application.parameters.ProudConfigurationReader;
 import edu.auth.jetproud.application.parameters.errors.ProudArgumentException;
 import edu.auth.jetproud.proud.context.buildercontracts.AlgorithmProudConfigBuilder;
 import edu.auth.jetproud.proud.context.buildercontracts.DebugSelectionProudConfigBuilder;
-import edu.auth.jetproud.proud.partitioning.GridPartitioning;
-import edu.auth.jetproud.utils.ExceptionUtils;
 
 public final class Proud implements ProudContext
 {
@@ -21,22 +19,22 @@ public final class Proud implements ProudContext
     private ProudConfiguration proudConfiguration;
     private KafkaConfiguration kafkaConfiguration;
     private InfluxDBConfiguration influxDBConfiguration;
-    private ProudInternalConfiguration proudInternalConfiguration;
-    private ProudDatasetConfiguration proudDatasetConfiguration;
+    private InternalConfiguration internalConfiguration;
+    private DatasetConfiguration datasetConfiguration;
 
     private Proud(ProudConfiguration proudConfiguration) {
         this(proudConfiguration,
                 KafkaConfiguration.fromSystemEnvironment(),
                 InfluxDBConfiguration.fromSystemEnvironment(),
-                ProudDatasetConfiguration.fromSystemEnvironment());
+                DatasetConfiguration.fromSystemEnvironment());
     }
 
-    protected Proud(ProudConfiguration proudConfiguration, KafkaConfiguration kafkaConfiguration, InfluxDBConfiguration influxDBConfiguration, ProudDatasetConfiguration proudDatasetConfiguration) {
+    protected Proud(ProudConfiguration proudConfiguration, KafkaConfiguration kafkaConfiguration, InfluxDBConfiguration influxDBConfiguration, DatasetConfiguration datasetConfiguration) {
         this.proudConfiguration = proudConfiguration;
-        this.proudDatasetConfiguration = proudDatasetConfiguration;
+        this.datasetConfiguration = datasetConfiguration;
         this.kafkaConfiguration = kafkaConfiguration;
         this.influxDBConfiguration = influxDBConfiguration;
-        this.proudInternalConfiguration = ProudInternalConfiguration.createFrom(proudConfiguration);
+        this.internalConfiguration = InternalConfiguration.createFrom(proudConfiguration);
     }
 
     // Getters - ProudContext Impl
@@ -57,13 +55,13 @@ public final class Proud implements ProudContext
     }
 
     @Override
-    public ProudInternalConfiguration internalConfiguration() {
-        return proudInternalConfiguration;
+    public InternalConfiguration internalConfiguration() {
+        return internalConfiguration;
     }
 
     @Override
-    public ProudDatasetConfiguration datasetConfiguration() {
-        return proudDatasetConfiguration;
+    public DatasetConfiguration datasetConfiguration() {
+        return datasetConfiguration;
     }
 
     // Properties

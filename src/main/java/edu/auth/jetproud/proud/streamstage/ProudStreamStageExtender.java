@@ -26,15 +26,12 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
     private ProudPartitioning createProudPartitioning() throws ProudException {
         ProudPartitioningOption partitioningOption = proudContext.configuration().getPartitioning();
 
-        int partitionCount = proudContext.internalConfiguration().getPartitions();
-        double commonR = proudContext.internalConfiguration().getCommonR();
-
-        // Define here because of java's switch-case scoping
+        // Define here because of java's switch-case scoping issues
         String dataset;
 
         switch (partitioningOption) {
             case Replication:
-                return new ReplicationPartitioning(proudContext, partitionCount);
+                return new ReplicationPartitioning(proudContext);
             case Grid:
                 dataset = proudContext.configuration().getDataset();
 
@@ -54,9 +51,8 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
                 GridPartitioning.GridPartitioner gridPartitioner
                         = userDefinedPartitioner == null ? defaultPartitioner : userDefinedPartitioner;
 
-                return new GridPartitioning(proudContext, partitionCount, commonR, gridPartitioner);
+                return new GridPartitioning(proudContext, gridPartitioner);
             case Tree:
-                final int treeInitCount = proudContext.configuration().getTreeInitialNodeCount();
                 dataset = proudContext.configuration().getDataset();
                 final String datasetHome = proudContext.datasetConfiguration().getDatasetHome();
                 final String treeInputFileName = proudContext.treeInitFileName();
@@ -74,10 +70,10 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
                 Path path = Paths.get(datasetHome, dataset, treeInputFileName);
                 String initFilePath = path.toString();
 
-                return new TreePartitioning(proudContext, treeInitCount, partitionCount, commonR, initFilePath);
+                return new TreePartitioning(proudContext, initFilePath);
         }
 
-        return new ReplicationPartitioning(proudContext, partitionCount);
+        throw ExceptionUtils.never();
     }
 
     @Override
