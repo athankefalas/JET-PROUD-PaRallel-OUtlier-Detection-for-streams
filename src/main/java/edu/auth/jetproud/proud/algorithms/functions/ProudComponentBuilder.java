@@ -7,8 +7,12 @@ import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.model.meta.OutlierQuery;
+import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -59,10 +63,14 @@ public final class ProudComponentBuilder
     /// Metadata Window
 
     public <T extends AnyProudData> AggregateOperation1<T, List<T>, List<T>> metaWindowAggregator() {
-        return AggregateOperation.withCreate(()-> (List<T>) new LinkedList<T>())
-                .<T>andAccumulate(List::add)
+        return AggregateOperation.withCreate(()-> (List<T>) new ArrayList<T>())
+                .<T>andAccumulate((ls, it)->{
+                    ls.add(it);
+                })
                 .andCombine((acc, other)-> {
-                    for (T item:other) {
+                    List<T> otherCopy = Lists.copyOf(other);
+
+                    for (T item:otherCopy) {
                         if (acc.contains(item))
                             continue;
 
@@ -78,7 +86,7 @@ public final class ProudComponentBuilder
 
 
     public <T extends AnyProudData> AggregateOperation1<KeyedWindowResult<Integer, List<T>>, List<Tuple<Long,OutlierQuery>>, List<Tuple<Long,OutlierQuery>>> metadataAggregation(BiConsumerEx<List<Tuple<Long,OutlierQuery>>, KeyedWindowResult<Integer, List<T>>> accumulateFunction) {
-        return AggregateOperation.withCreate(()->(List<Tuple<Long,OutlierQuery>>)new LinkedList<Tuple<Long,OutlierQuery>>())
+        return AggregateOperation.withCreate(()->(List<Tuple<Long,OutlierQuery>>)new ArrayList<Tuple<Long,OutlierQuery>>())
                 .andAccumulate(accumulateFunction)
                 .andExportFinish((it)->it);
     }

@@ -222,7 +222,7 @@ public final class Lists
         return list;
     }
 
-    public static <E> List<E> copyOf(Collection<E> collection)
+    public synchronized static <E> List<E> copyOf(Collection<E> collection)
     {
         int size = collection != null ? collection.size() : 1024;
         List<E> copy = make(size);

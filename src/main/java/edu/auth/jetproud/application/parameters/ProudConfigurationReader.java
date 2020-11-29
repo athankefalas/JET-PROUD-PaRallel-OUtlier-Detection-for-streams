@@ -15,6 +15,7 @@ public class ProudConfigurationReader {
         return read(Lists.from(args));
     }
 
+    @SuppressWarnings("rawtypes")
     public ProudConfiguration read(List<String> args) throws ProudArgumentException {
         ProudConfiguration config = new ProudConfiguration();
         Map<ProudParameter, Object> configMap = new HashMap<>();

@@ -1,8 +1,9 @@
 package edu.auth.jetproud.utils;
 
+import java.io.Serializable;
 import java.util.Map;
 
-public class Tuple<E1, E2> implements Map.Entry<E1, E2>
+public class Tuple<E1, E2> implements Map.Entry<E1, E2>, Serializable
 {
     public E1 first;
     public E2 second;
@@ -52,5 +53,13 @@ public class Tuple<E1, E2> implements Map.Entry<E1, E2>
     public E2 setValue(E2 value) {
         second = value;
         return second;
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "1=" + first +
+                ", 2=" + second +
+                '}';
     }
 }

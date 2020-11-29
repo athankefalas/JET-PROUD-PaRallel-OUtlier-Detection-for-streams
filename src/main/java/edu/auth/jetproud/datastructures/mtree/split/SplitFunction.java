@@ -5,6 +5,7 @@ import edu.auth.jetproud.datastructures.mtree.partition.PartitionFunction;
 import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
 import edu.auth.jetproud.utils.Pair;
 
+import java.io.Serializable;
 import java.util.Set;
 
 /**
@@ -18,7 +19,7 @@ import java.util.Set;
  *
  * @param <DATA> The type of the data objects.
  */
-public interface SplitFunction<DATA> {
+public interface SplitFunction<DATA> extends Serializable {
 
     /**
      * Processes the splitting of a node.

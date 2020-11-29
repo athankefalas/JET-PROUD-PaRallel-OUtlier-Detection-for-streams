@@ -17,25 +17,11 @@ public class ApplicationMain {
         // Auto read
         pipeline.readData();
 
-        pipeline.readFrom(ProudSource.debugFileSource(proud))
+        pipeline.readFrom(ProudSource.file(proud))
                 .partition()
                 .detectOutliers()
                 .sinkData();
                 // or .writeTo(ProudSink.auto(proud));
-
-
-        // Case 1 - Native proud
-        //pipeline.readFrom( ... ProudSource ( ? extends StreamSource ) ... )
-        //    .applyPartitioning()
-        //    .detectOutliers() | .proudExecute()
-        //    .writeOutliersTo( ... Sink ...)    { .writeTo( Sinks.influxDB() ) }
-
-        // Case 2 - Any ProudDataConvertible Stage
-        //pipeline.readFrom( ... StreamSource ... )
-        //    .mappedToProudData()
-        //    .applyPartitioning()
-        //    .detectOutliers() | .proudExecute()
-        //    .writeOutliersTo( ... Sink ...)    { .writeTo( Sinks.influxDB() ) }
 
         Job job = ProudExecutor.executeJob(pipeline);
     }

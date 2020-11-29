@@ -225,6 +225,9 @@ public class ProudConfigurationBuilder
     @Override
     public Proud build() {
         Proud proud = new Proud(proudConfiguration, kafkaConfiguration, influxDBConfiguration, datasetConfiguration);
+        proud.setInputType(inputType);
+        proud.setOutputType(outputType);
+        proud.setTreeInitFileName(treeInitFileName);
 
         try {
             proud.configuration().validateConfiguration();

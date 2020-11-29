@@ -12,6 +12,9 @@ public interface ProudPipeline extends Pipeline
 {
 
     @ClassExtension(ProudPipelineExtender.class)
+    Pipeline jetPipeline();
+
+    @ClassExtension(ProudPipelineExtender.class)
     ProudContext proudContext();
 
     @ClassExtension(ProudPipelineExtender.class)
@@ -21,6 +24,8 @@ public interface ProudPipeline extends Pipeline
     ProudStreamStage<AnyProudData> readData();
 
     interface Implementor {
+
+        Pipeline jetPipeline();
 
         ProudContext proudContext();
 

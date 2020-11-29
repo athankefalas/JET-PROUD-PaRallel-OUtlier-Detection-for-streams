@@ -9,7 +9,9 @@ import edu.auth.jetproud.application.parameters.errors.ProudArgumentException;
 import edu.auth.jetproud.proud.context.buildercontracts.AlgorithmProudConfigBuilder;
 import edu.auth.jetproud.proud.context.buildercontracts.DebugSelectionProudConfigBuilder;
 
-public final class Proud implements ProudContext
+import java.io.Serializable;
+
+public final class Proud implements ProudContext, Serializable
 {
     private String treeInitFileName = "tree_input.txt";
 
@@ -81,12 +83,16 @@ public final class Proud implements ProudContext
         return treeInitFileName;
     }
 
+    public void setTreeInitFileName(String treeInitFileName) {
+        this.treeInitFileName = treeInitFileName;
+    }
 
-    // Methods
+    public void setInputType(InputType inputType) {
+        this.inputType = inputType;
+    }
 
-    public void execute(Pipeline pipeline) {
-        JetInstance jet = Jet.newJetInstance();
-        jet.newJob(pipeline).join();
+    public void setOutputType(OutputType outputType) {
+        this.outputType = outputType;
     }
 
     // Static Init

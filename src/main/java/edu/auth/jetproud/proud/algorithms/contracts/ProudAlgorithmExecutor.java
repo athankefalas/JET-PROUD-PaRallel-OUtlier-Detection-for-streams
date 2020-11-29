@@ -12,7 +12,9 @@ import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.utils.ExceptionUtils;
 import edu.auth.jetproud.utils.Tuple;
 
-public interface ProudAlgorithmExecutor
+import java.io.Serializable;
+
+public interface ProudAlgorithmExecutor extends Serializable
 {
     ProudAlgorithmOption algorithm();
 

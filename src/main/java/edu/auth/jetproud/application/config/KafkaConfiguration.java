@@ -1,6 +1,8 @@
 package edu.auth.jetproud.application.config;
 
-public class KafkaConfiguration
+import java.io.Serializable;
+
+public class KafkaConfiguration implements Serializable
 {
 
     public static final String KAFKA_TOPIC_PROPERTY = "KAFKA_TOPIC";

@@ -2,9 +2,10 @@ package edu.auth.jetproud.application.config;
 
 import edu.auth.jetproud.utils.GCD;
 
+import java.io.Serializable;
 import java.util.List;
 
-public final class InternalConfiguration {
+public final class InternalConfiguration implements Serializable {
 
     private int partitions;
 

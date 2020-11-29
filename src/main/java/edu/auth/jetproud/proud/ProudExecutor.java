@@ -21,7 +21,7 @@ public final class ProudExecutor
 
     public static ProudJob executeJob(ProudPipeline pipeline) {
         JetInstance jet = Jet.newJetInstance();
-        Job job = jet.newJob(pipeline);
+        Job job = jet.newJob(pipeline.jetPipeline());
 
         ProudJob proudJob = new ProudJob(pipeline.proudContext(), jet, job);
         proudJob.join();

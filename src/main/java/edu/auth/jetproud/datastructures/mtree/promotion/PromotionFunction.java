@@ -5,6 +5,7 @@ import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.utils.CollectionUtils;
 import edu.auth.jetproud.utils.Pair;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
  *
  * @param <DATA> The type of the data objects.
  */
-public interface PromotionFunction<DATA> {
+public interface PromotionFunction<DATA> extends Serializable {
 
     /**
      * Chooses (promotes) a pair of objects according to some criteria that is

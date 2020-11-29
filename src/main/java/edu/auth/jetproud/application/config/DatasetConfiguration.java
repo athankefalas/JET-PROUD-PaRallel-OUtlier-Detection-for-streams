@@ -1,6 +1,8 @@
 package edu.auth.jetproud.application.config;
 
-public class DatasetConfiguration
+import java.io.Serializable;
+
+public class DatasetConfiguration implements Serializable
 {
     public static final String DATASET_HOME_PROPERTY = "JOB_INPUT";
 

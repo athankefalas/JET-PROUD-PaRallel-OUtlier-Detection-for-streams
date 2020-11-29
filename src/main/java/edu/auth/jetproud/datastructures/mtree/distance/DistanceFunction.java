@@ -6,6 +6,7 @@ import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
 import edu.auth.jetproud.model.contracts.EuclideanCoordinate;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.Map;
  *
  * @param <DATA> The type of the data objects.
  */
-public interface DistanceFunction<DATA> {
+public interface DistanceFunction<DATA> extends Serializable {
 
     /**
      * Calculates the distance between two data points.

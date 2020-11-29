@@ -4,6 +4,7 @@ import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Pair;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -11,7 +12,7 @@ import java.util.*;
  *
  * @param <DATA> The type of the data on the sets.
  */
-public interface PartitionFunction<DATA> {
+public interface PartitionFunction<DATA> extends Serializable {
 
     /**
      * Executes the partitioning.

@@ -1,5 +1,6 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
+import com.hazelcast.jet.Traverser;
 import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
@@ -132,10 +133,12 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
         // Group Metadata
         StreamStage<List<Tuple<Long, OutlierQuery>>> outStage =
-                detectOutliersStage.flatMap(Traversers::traverseIterable)
+                detectOutliersStage.flatMap((data)->{
+                    return Traversers.traverseIterable(data);
+                })
                 .window(WindowDefinition.tumbling(windowSize))
                 .groupingKey((it)->it.id % partitionsCount)
-                .aggregate(components.metaWindowAggregator())
+                .aggregate(components.metaWindowAggregator())//.peek()
                 .rollingAggregate(
                         components.metadataAggregation((acc, window)->{
                             int windowKey = window.getKey();
@@ -150,7 +153,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
                             // Create / Update state Map
                             if(current == null) {
-                                Map<Integer,NaiveProudData> outliersMap = new HashMap<>();
+                                HashMap<Integer,NaiveProudData> outliersMap = new HashMap<>();
 
                                 for (NaiveProudData el:elements) {
                                     NaiveProudData oldElement = outliersMap.getOrDefault(el.id, null);
@@ -214,7 +217,9 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                 );
 
         // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap(Traversers::traverseIterable);
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap((data)->{
+            return Traversers.traverseIterable(data);
+        });
         return flattenedResult;
     }
 

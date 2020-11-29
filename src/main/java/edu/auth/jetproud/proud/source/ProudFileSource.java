@@ -14,8 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-public class ProudFileSource<T extends AnyProudData> implements ProudSource<T> {
+public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, Serializable {
     private ProudContext proudContext;
+    private String fileName = "input_20k.txt";
     private Parser<T> parser;
 
     public ProudFileSource(ProudContext proudContext, Parser<T> parser) {
@@ -23,46 +24,24 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T> {
         this.parser = parser;
     }
 
-    private FileBufferedReaderContext fileBufferedReaderContext(Processor.Context ctx) throws FileNotFoundException {
-        String fileInput = proudContext.datasetConfiguration().getDatasetHome();
-        String dataset = proudContext.configuration().getDataset();
-
-        Path path = Paths.get(fileInput, dataset, "input_20k.txt");
-        InputStreamReader inputStreamReader = new FileReader(path.toFile());
-        BufferedReader reader = new BufferedReader(inputStreamReader);
-
-        return new FileBufferedReaderContext(reader);
+    public ProudFileSource(ProudContext proudContext, String fileName, Parser<T> parser) {
+        this.proudContext = proudContext;
+        this.fileName = fileName;
+        this.parser = parser;
     }
 
-    private void bufferFiller(FileBufferedReaderContext ctx, SourceBuilder.TimestampedSourceBuffer<T> buf) throws IOException, ProudException {
-        BufferedReader reader = ctx.reader;
+    private FileBufferedReaderContext<T> fileBufferedReaderContext(Processor.Context ctx) throws FileNotFoundException {
+        String datasetHomeDir = proudContext.datasetConfiguration().getDatasetHome();
+        String dataset = proudContext.configuration().getDataset();
 
-        while (true) {
-
-            if (!reader.ready())
-                break;
-
-            String line = reader.readLine();
-
-            if (line == null) {
-                buf.close();
-                break;
-            }
-
-            T parsedObject = parser.parseString(line);
-
-            if (parsedObject == null) {
-                throw new ParserDeserializationException(line,"<T extends AnyProudData>");
-            }
-
-            buf.add(parsedObject, parsedObject.arrival);
-        }
+        Path path = Paths.get(datasetHomeDir, fileName);
+        return new FileBufferedReaderContext<>(path.toString(), parser);
     }
 
     @Override
     public StreamSource<T> createJetSource() {
         return SourceBuilder.timestampedStream("proud-source", this::fileBufferedReaderContext)
-                .fillBufferFn(this::bufferFiller)
+                .fillBufferFn(FileBufferedReaderContext<T>::fill)
                 .destroyFn(FileBufferedReaderContext::close)
                 .build();
     }
@@ -84,16 +63,65 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T> {
         };
     }
 
-    private static class FileBufferedReaderContext {
-        private final BufferedReader reader;
+    private static class FileBufferedReaderContext<T extends AnyProudData> implements Serializable {
+        private String filePath;
+        private Parser<T> parser;
+        private transient BufferedReader reader;
 
-        FileBufferedReaderContext(BufferedReader reader) {
-            this.reader = reader;
+        FileBufferedReaderContext(String filePath, Parser<T> parser) {
+            this.filePath = filePath;
+            this.parser = parser;
+        }
+
+        private BufferedReader getReader() {
+            if (reader == null) {
+                try {
+                    File file = new File(filePath);
+                    InputStreamReader inputStreamReader = new FileReader(file);
+                    this.reader = new BufferedReader(inputStreamReader);
+                } catch (Exception e) {
+                    this.reader = null;
+                }
+            }
+
+            return reader;
+        }
+
+        public void fill(SourceBuilder.TimestampedSourceBuffer<T> buf) throws Exception {
+            BufferedReader reader = getReader();
+
+            while (true) {
+
+                if (reader == null) {
+                    throw new IOException("Input source \""+filePath+"\"not found.");
+                }
+
+                if (!reader.ready())
+                    break;
+
+                String line = reader.readLine();
+
+                if (line == null) {
+                    buf.close();
+                    break;
+                }
+
+                T parsedObject = parser.parseString(line);
+
+                if (parsedObject == null) {
+                    throw new ParserDeserializationException(line,"<T extends AnyProudData>");
+                }
+
+                buf.add(parsedObject, parsedObject.arrival);
+            }
         }
 
         void close() {
             try {
-                reader.close();
+                BufferedReader reader = getReader();
+
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 throw ExceptionUtils.sneaky(e);
             }

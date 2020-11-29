@@ -17,6 +17,10 @@ public class ProudPipelineExtender extends AnyProudJetClassExtender<Pipeline> im
         super(proudContext);
     }
 
+    @Override
+    public Pipeline jetPipeline() {
+        return target;
+    }
 
     @Override
     public ProudContext proudContext() {

@@ -26,24 +26,32 @@ public interface ProudSource<T extends AnyProudData>
         // Select the data source automatically based on config
         switch (context.inputType()) {
             case File:
-                return debugFileSource(context);
+                return file(context);
             case Kafka:
                 return kafkaSource(context);
             default:
                 if (context.configuration().getDebug()) {
-                    return debugFileSource(context);
+                    return file(context);
                 } else {
                     return kafkaSource(context);
                 }
         }
     }
 
-    static ProudSource<AnyProudData> debugFileSource(ProudContext context) {
+    static ProudSource<AnyProudData> file(ProudContext context) {
         return new ProudFileSource<>(context, ProudFileSource.proudDataParser("&",";"));
     }
 
-    static ProudSource<AnyProudData> debugFileSource(ProudContext context, String fieldDelimiter, String valueDelimiter) {
+    static ProudSource<AnyProudData> file(ProudContext context, String fieldDelimiter, String valueDelimiter) {
         return new ProudFileSource<>(context, ProudFileSource.proudDataParser(fieldDelimiter,valueDelimiter));
+    }
+
+    static ProudSource<AnyProudData> file(ProudContext context, String fileName) {
+        return new ProudFileSource<>(context, fileName, ProudFileSource.proudDataParser("&",";"));
+    }
+
+    static ProudSource<AnyProudData> file(ProudContext context, String fileName, String fieldDelimiter, String valueDelimiter) {
+        return new ProudFileSource<>(context,fileName, ProudFileSource.proudDataParser(fieldDelimiter,valueDelimiter));
     }
 
     static ProudSource<AnyProudData> streaming(StreamGenerator streamGenerator) {

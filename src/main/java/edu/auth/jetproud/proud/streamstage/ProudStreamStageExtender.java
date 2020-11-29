@@ -67,7 +67,7 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
                             ProudArgumentException.missing("Dataset name","proud configuration")
                     );
 
-                Path path = Paths.get(datasetHome, dataset, treeInputFileName);
+                Path path = Paths.get(datasetHome, treeInputFileName);
                 String initFilePath = path.toString();
 
                 return new TreePartitioning(proudContext, initFilePath);
@@ -81,8 +81,8 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
         final ProudPartitioning proudPartitioning = createProudPartitioning();
         long allowedLag = proudContext.internalConfiguration().getAllowedLateness();
 
-        StreamStage<PartitionedData<AnyProudData>> jetStreamStage = target.flatMap(proudPartitioning::jetPartition)
-            .addTimestamps((it)->it.getData().arrival, allowedLag);
+        StreamStage<PartitionedData<AnyProudData>> jetStreamStage = target.flatMap(proudPartitioning::jetPartition);
+                //.addTimestamps((it)->it.getData().arrival, allowedLag); TODO is this needed ??? because it throws
         return (ProudPartitionedStreamStage<AnyProudData>) ProxyExtension.of(jetStreamStage,
                 ProudPartitionedStreamStage.class,
                 new ProudPartitionedStreamStageExtender<AnyProudData>(proudContext)

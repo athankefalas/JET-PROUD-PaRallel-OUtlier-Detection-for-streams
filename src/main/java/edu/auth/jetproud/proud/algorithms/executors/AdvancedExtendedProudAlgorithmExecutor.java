@@ -1,5 +1,6 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
+import com.hazelcast.jet.Traverser;
 import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
@@ -22,7 +23,10 @@ import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
+import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +34,7 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
 {
     public static final String DATA_STATE = "ADVANCED_EXT_DATA_STATE";
 
-    public static class AdvancedExtendedState {
+    public static class AdvancedExtendedState implements Serializable {
         public MTree<AdvancedProudData> mTree;
         public HashMap<Integer, AdvancedProudData> map;
 
@@ -203,7 +207,15 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
         );
 
         // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((data)->{
+            Traverser<Tuple<Long, OutlierQuery>> traverser = Traversers.empty();
+            Iterator<Tuple<Long, OutlierQuery>> iterator = data.listIterator();
+
+            while(iterator.hasNext())
+                traverser = traverser.append(iterator.next());
+
+            return traverser;
+        });
         return flattenedResult;
     }
 

@@ -3,6 +3,7 @@ package edu.auth.jetproud.datastructures.vptree.distance;
 import edu.auth.jetproud.model.contracts.EuclideanCoordinate;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 
@@ -19,7 +20,7 @@ import java.util.List;
  *
  * @author <a href="https://github.com/jchambers">Jon Chambers</a>
  */
-public interface DistanceFunction<T> {
+public interface DistanceFunction<T> extends Serializable {
 
     /**
      * Returns the distance between two points.

@@ -19,11 +19,11 @@ public interface ProudContext extends Serializable {
 
     InternalConfiguration internalConfiguration();
 
-    enum InputType {
+    enum InputType implements Serializable {
         Unknown, File, Kafka
     }
 
-    enum OutputType {
+    enum OutputType implements Serializable {
         Unknown, Print, InfluxDB
     }
 }

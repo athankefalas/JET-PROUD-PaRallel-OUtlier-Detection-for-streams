@@ -2,13 +2,14 @@ package edu.auth.jetproud.model.meta;
 
 import edu.auth.jetproud.model.AnyProudData;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class OutlierMetadata<T extends AnyProudData>
+public class OutlierMetadata<T extends AnyProudData> implements Serializable
 {
-    private Map<Integer, T> outliers;
+    private HashMap<Integer, T> outliers;
 
     public OutlierMetadata() {
         outliers = new HashMap<>();
@@ -26,7 +27,7 @@ public class OutlierMetadata<T extends AnyProudData>
         this.outliers.putAll(outliers);
     }
 
-    public void setOutliers(Map<Integer, T> outliers) {
+    public void setOutliers(HashMap<Integer, T> outliers) {
         this.outliers = outliers;
     }
 

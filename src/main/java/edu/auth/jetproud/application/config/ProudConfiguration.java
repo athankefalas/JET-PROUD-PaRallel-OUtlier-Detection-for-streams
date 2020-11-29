@@ -12,6 +12,7 @@ import edu.auth.jetproud.utils.Lists;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,16 +28,16 @@ public class ProudConfiguration implements Serializable {
     private ProudAlgorithmOption algorithm;
 
     @ProudParameterValue(Switch = "--W")
-    private List<Integer> windowSizes;
+    private ArrayList<Integer> windowSizes;
 
     @ProudParameterValue(Switch = "--S")
-    private List<Integer> slideSizes;
+    private ArrayList<Integer> slideSizes;
 
     @ProudParameterValue(Switch = "--k")
-    private List<Integer> kNeighbours;
+    private ArrayList<Integer> kNeighbours;
 
     @ProudParameterValue(Switch = "--R")
-    private List<Double> rNeighbourhood;
+    private ArrayList<Double> rNeighbourhood;
 
     @ProudParameterValue(Switch = "--dataset")
     private String dataset;
@@ -76,7 +77,7 @@ public class ProudConfiguration implements Serializable {
     }
 
     public void setWindowSizes(List<Integer> windowSizes) {
-        this.windowSizes = windowSizes;
+        this.windowSizes = new ArrayList<>(windowSizes);
     }
 
     public List<Integer> getSlideSizes() {
@@ -84,7 +85,7 @@ public class ProudConfiguration implements Serializable {
     }
 
     public void setSlideSizes(List<Integer> slideSizes) {
-        this.slideSizes = slideSizes;
+        this.slideSizes = new ArrayList<>(slideSizes);
     }
 
     public List<Integer> getKNeighbours() {
@@ -92,7 +93,7 @@ public class ProudConfiguration implements Serializable {
     }
 
     public void setKNeighbours(List<Integer> kNeighbours) {
-        this.kNeighbours = kNeighbours;
+        this.kNeighbours = new ArrayList<>(kNeighbours);
     }
 
     public List<Double> getRNeighbourhood() {
@@ -100,7 +101,7 @@ public class ProudConfiguration implements Serializable {
     }
 
     public void setRNeighbourhood(List<Double> rNeighbourhood) {
-        this.rNeighbourhood = rNeighbourhood;
+        this.rNeighbourhood = new ArrayList<>(rNeighbourhood);
     }
 
     public String getDataset() {

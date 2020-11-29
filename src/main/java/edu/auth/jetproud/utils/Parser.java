@@ -1,11 +1,12 @@
 package edu.auth.jetproud.utils;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public interface Parser<T> {
+public interface Parser<T> extends Serializable {
 
     T parseString(String value);
 

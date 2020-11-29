@@ -9,7 +9,9 @@ import edu.auth.jetproud.proud.sink.collectors.StreamOutliersCollector;
 import edu.auth.jetproud.utils.Tuple;
 import org.influxdb.dto.Point;
 
-public interface ProudSink<T>
+import java.io.Serializable;
+
+public interface ProudSink<T> extends Serializable
 {
 
     Sink<T> createJetSink();
