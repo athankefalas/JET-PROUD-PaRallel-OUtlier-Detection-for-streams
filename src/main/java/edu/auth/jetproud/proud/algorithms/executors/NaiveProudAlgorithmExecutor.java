@@ -2,6 +2,7 @@ package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traverser;
 import com.hazelcast.jet.Traversers;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
@@ -21,6 +22,7 @@ import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +74,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<List<NaiveProudData>> detectOutliersStage = windowedStage.rollingAggregate(
+        StreamStage<AppendableTraverser<NaiveProudData>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierAggregation((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -80,6 +82,14 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                     long windowStart = window.start();
                     long windowEnd = window.end();
 
+                    if (proudContext.configuration().getDebug()) {
+                        System.out.println("[-]\tPROUD:\tProcessing window "+partition
+                                +" from "+windowStart+" to "+windowEnd+" max arrival "
+                                +window.getValue().stream()
+                                .map((it)->it.second)
+                                .max(Comparator.comparingLong(AnyProudData::getArrival))
+                        );
+                    }
 
                     List<NaiveProudData> windowItems = window.getValue().stream()
                             .map(Tuple::getSecond)
@@ -126,25 +136,27 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                     // Add all non-safe inliers to the outliers accumulator
                     for (NaiveProudData currentNode : windowItems) {
                         if (!currentNode.safe_inlier)
-                            outliers.add(currentNode);
+                            outliers.append(currentNode);
                     }
                 })
         );
 
         // Group Metadata
-        StreamStage<List<Tuple<Long, OutlierQuery>>> outStage =
+        StreamStage<AppendableTraverser<Tuple<Long, OutlierQuery>>> outStage =
                 detectOutliersStage.flatMap((data)->{
-                    return Traversers.traverseIterable(data);
+                    return data;
                 })
                 .window(WindowDefinition.tumbling(windowSize))
                 .groupingKey((it)->it.id % partitionsCount)
-                .aggregate(components.metaWindowAggregator())//.peek()
+                .aggregate(components.metaWindowAggregator())
                 .rollingAggregate(
-                        components.metadataAggregation((acc, window)->{
+                        components.metadataAggregation(NaiveProudData.class, (acc, window)->{
                             int windowKey = window.getKey();
 
                             long windowStart = window.start();
                             long windowEnd = window.end();
+
+
 
                             List<NaiveProudData> elements = window.getValue();
 
@@ -212,13 +224,13 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                             }
 
                             OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliers);
-                            acc.add(new Tuple<>(windowEnd, queryCopy));
+                            acc.append(new Tuple<>(windowEnd, queryCopy));
                         })
                 );
 
         // Return flattened stream
         StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap((data)->{
-            return Traversers.traverseIterable(data);
+            return data;
         });
         return flattenedResult;
     }

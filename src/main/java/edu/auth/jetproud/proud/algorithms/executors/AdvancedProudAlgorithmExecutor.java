@@ -1,6 +1,7 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
@@ -34,7 +35,8 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
     public static final String DATA_STATE = "ADVANCED_DATA_STATE";
     public static final String METADATA_STATE = "ADVANCED_METADATA_STATE";
 
-    public static class AdvancedState {
+    public static class AdvancedState implements Serializable
+    {
         public MTree<AdvancedProudData> mTree;
         public HashMap<Integer, AdvancedProudData> map;
 
@@ -91,7 +93,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<List<AdvancedProudData>> detectOutliersStage = windowedStage.rollingAggregate(
+        StreamStage<AppendableTraverser<AdvancedProudData>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierAggregation((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -175,10 +177,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
                     // Add outliers to accumulator
                     for (AdvancedProudData el : current.map.values()) {
-                        if (outliers.stream().anyMatch((it)->it.id == el.id))
-                            continue;
-
-                        outliers.add(el);
+                        outliers.append(el);
                     }
 
                     // Remove expiring and flagged objects from MTree
@@ -197,13 +196,13 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
         );
 
         // Group Metadata
-        StreamStage<List<Tuple<Long, OutlierQuery>>> outStage =
-                detectOutliersStage.flatMap(Traversers::traverseIterable)
+        StreamStage<AppendableTraverser<Tuple<Long, OutlierQuery>>> outStage =
+                detectOutliersStage.flatMap((it)->it)
                         .window(WindowDefinition.tumbling(windowSize))
                         .groupingKey((it)->it.id % partitionsCount)
                         .aggregate(components.metaWindowAggregator())
                         .rollingAggregate(
-                                components.metadataAggregation((acc, window)->{
+                                components.metadataAggregation(AdvancedProudData.class,(acc, window)->{
                                     int windowKey = window.getKey();
 
                                     long windowStart = window.start();
@@ -263,13 +262,13 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                     }
 
                                     OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliers);
-                                    acc.add(new Tuple<>(windowEnd, queryCopy));
+                                    acc.append(new Tuple<>(windowEnd, queryCopy));
 
                                 })
                         );
 
         // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap(Traversers::traverseIterable);
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap((it)->it);
         return flattenedResult;
     }
 

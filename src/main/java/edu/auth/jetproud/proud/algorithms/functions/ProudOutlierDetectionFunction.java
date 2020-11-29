@@ -1,6 +1,7 @@
 package edu.auth.jetproud.proud.algorithms.functions;
 
 import com.hazelcast.function.BiConsumerEx;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
@@ -13,10 +14,10 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class ProudOutlierDetectionFunction<T extends AnyProudData> implements BiConsumerEx<List<Tuple<Long, OutlierQuery>>, KeyedWindowResult<Integer, List<Tuple<Integer, T>>>>
+public class ProudOutlierDetectionFunction<T extends AnyProudData> implements BiConsumerEx<AppendableTraverser<Tuple<Long, OutlierQuery>>, KeyedWindowResult<Integer, List<Tuple<Integer, T>>>>
 {
 
-    public interface AccumulateFunction<T extends AnyProudData> extends BiConsumer<List<Tuple<Long, OutlierQuery>>, KeyedWindowResult<Integer, List<Tuple<Integer, T>>>>, Serializable {
+    public interface AccumulateFunction<T extends AnyProudData> extends BiConsumer<AppendableTraverser<Tuple<Long, OutlierQuery>>, KeyedWindowResult<Integer, List<Tuple<Integer, T>>>>, Serializable {
 
     }
 
@@ -29,7 +30,7 @@ public class ProudOutlierDetectionFunction<T extends AnyProudData> implements Bi
     }
 
     @Override
-    public void acceptEx(List<Tuple<Long, OutlierQuery>> accumulator, KeyedWindowResult<Integer, List<Tuple<Integer, T>>> item) throws Exception {
+    public void acceptEx(AppendableTraverser<Tuple<Long, OutlierQuery>> accumulator, KeyedWindowResult<Integer, List<Tuple<Integer, T>>> item) throws Exception {
         // Statistics
         DistributedCounter slideCounter = ProudStatistics.slideCounter();
         DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();

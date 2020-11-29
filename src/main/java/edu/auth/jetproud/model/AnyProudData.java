@@ -96,7 +96,7 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
 
     @Override
     public String toString() {
-        return "AnyData(" +
+        return "Point(" +
                 "id=" + id +
                 ", value=" + value +
                 ", arrival=" + arrival +

@@ -2,6 +2,7 @@ package edu.auth.jetproud.proud.sink;
 
 import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.aggregate.AggregateOperation;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.Sink;
 import com.hazelcast.jet.pipeline.StreamStage;
@@ -68,7 +69,7 @@ public abstract class AnyProudSink<T> implements ProudSink<T>
                         .andExportFinish((acc)->acc)
                 )
                 .rollingAggregate(
-                        AggregateOperation.withCreate(()->new LinkedList<T>())
+                        AggregateOperation.withCreate(()->new AppendableTraverser<T>(1000))
                                 .<KeyedWindowResult<Long, LinkedList<Tuple<Long, OutlierQuery>>>>andAccumulate((acc, window)->{
                                     List<Tuple<Long, OutlierQuery>> elements = window.getValue();
 
@@ -80,11 +81,11 @@ public abstract class AnyProudSink<T> implements ProudSink<T>
                                             });
 
                                     T convertedResult = convertResultItem(window.key(), coalesced);
-                                    acc.add(convertedResult);
+                                    acc.append(convertedResult);
                                 })
                                 .andExportFinish((it)->it)
                 )
-                .flatMap(Traversers::traverseIterable);
+                .flatMap((it)->it);
 
         return aggregated;
     }

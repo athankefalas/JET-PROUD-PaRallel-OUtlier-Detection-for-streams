@@ -1,4 +1,4 @@
-slide,query,outliers_count
+slide,query(w|s|r|k),outliers_count
 500,"(10000,500,0.45,50)",432
 1000,"(10000,500,0.45,50)",245
 1500,"(10000,500,0.45,50)",149

@@ -51,4 +51,15 @@ public class OutlierQuery implements Serializable
     public boolean isInSameSpace(OutlierQuery other) {
         return kNeighbours == other.kNeighbours && range == other.range && window == other.window && slide == other.slide;
     }
+
+    @Override
+    public String toString() {
+        return "(" +
+                "range=" + range +
+                ", kNeighbours=" + kNeighbours +
+                ", window=" + window +
+                ", slide=" + slide +
+                ", outlierCount=" + outlierCount +
+                ')';
+    }
 }

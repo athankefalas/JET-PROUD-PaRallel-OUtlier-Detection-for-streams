@@ -1,6 +1,7 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
@@ -100,7 +101,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<List<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
+        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierDetection((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -163,7 +164,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                             .count();
 
                     OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
-                    outliers.add(new Tuple<>(windowEnd, queryCopy));
+                    outliers.append(new Tuple<>(windowEnd, queryCopy));
 
 
                     //Remove expiring points without removing clusters
@@ -181,7 +182,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
 
 
         // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
         return flattenedResult;
     }
 

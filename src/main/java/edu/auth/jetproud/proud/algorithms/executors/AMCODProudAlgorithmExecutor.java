@@ -1,6 +1,7 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.ProudConfiguration;
@@ -134,7 +135,7 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
         final int k_size = k_distinct_list.size();
         final int R_size = R_distinct_list.size();
 
-        StreamStage<List<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
+        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierDetection((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -225,7 +226,7 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
                                     outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
 
-                            outliers.add(new Tuple<>(windowEnd, outlierQuery));
+                            outliers.append(new Tuple<>(windowEnd, outlierQuery));
                         }
                     }
 
@@ -268,7 +269,7 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
 
 
         // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
         return flattenedResult;
     }
 

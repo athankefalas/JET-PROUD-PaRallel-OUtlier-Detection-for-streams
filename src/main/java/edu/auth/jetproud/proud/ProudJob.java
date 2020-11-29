@@ -145,14 +145,14 @@ public class ProudJob implements Job
     @Override
     @Nonnull
     public CompletableFuture<Void> getFuture() {
-        join();
+        if (completableFuture == null)
+            join();
         return completableFuture;
     }
 
     @Override
     public void join() {
-        job.join();
-        completableFuture = job.getFuture().whenComplete((_void, err)->{
+        completableFuture = job.getFuture().whenCompleteAsync((_void, err)->{
             slideCount = ProudStatistics.slideCounter().get();
             CPUTime = ProudStatistics.cpuTimeCounter().get();
 
@@ -167,7 +167,13 @@ public class ProudJob implements Job
                         "Average time per slide (millis): "+stats.averageTimePerSlide+"\n"
                 );
             }
+
         });
+
+        Thread thread = new Thread(()->{
+            completableFuture.join();
+        });
+        thread.start();
     }
 
     @Override

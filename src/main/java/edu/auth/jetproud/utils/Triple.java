@@ -20,6 +20,18 @@ public class Triple<First, Second, Third> implements Serializable
         this.third = third;
     }
 
+    public First getFirst() {
+        return first;
+    }
+
+    public Second getSecond() {
+        return second;
+    }
+
+    public Third getThird() {
+        return third;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

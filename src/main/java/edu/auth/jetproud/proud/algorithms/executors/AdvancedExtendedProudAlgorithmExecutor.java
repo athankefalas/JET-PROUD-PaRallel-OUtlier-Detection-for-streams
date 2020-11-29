@@ -2,6 +2,7 @@ package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traverser;
 import com.hazelcast.jet.Traversers;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
@@ -89,7 +90,7 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<List<Tuple<Long, OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
+        StreamStage<AppendableTraverser<Tuple<Long, OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierDetection((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -188,7 +189,7 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                     }
 
                     OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
-                    outliers.add(new Tuple<>(windowEnd, queryCopy));
+                    outliers.append(new Tuple<>(windowEnd, queryCopy));
 
                     // Remove expiring and flagged objects from MTree
                     List<AdvancedProudData> toRemove = elements.stream()
@@ -208,13 +209,7 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
 
         // Return flattened stream
         StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((data)->{
-            Traverser<Tuple<Long, OutlierQuery>> traverser = Traversers.empty();
-            Iterator<Tuple<Long, OutlierQuery>> iterator = data.listIterator();
-
-            while(iterator.hasNext())
-                traverser = traverser.append(iterator.next());
-
-            return traverser;
+            return data;
         });
         return flattenedResult;
     }

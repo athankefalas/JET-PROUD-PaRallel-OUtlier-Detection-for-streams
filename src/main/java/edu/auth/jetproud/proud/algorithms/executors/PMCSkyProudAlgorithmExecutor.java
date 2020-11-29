@@ -1,6 +1,7 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
+import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.ProudConfiguration;
@@ -149,7 +150,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         final int k_size = k_distinct_list.size();
         final int R_size = R_distinct_list.size();
 
-        StreamStage<List<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
+        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierDetection((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -236,7 +237,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                                     outlierQueries.get(0).window,
                                     outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
-                            outliers.add(new Tuple<>(windowEnd, outlierQuery));
+                            outliers.append(new Tuple<>(windowEnd, outlierQuery));
                         }
                     }
 
@@ -253,7 +254,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         );
 
         // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
         return flattenedResult;
     }
 
@@ -337,7 +338,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                 .mapToInt(Integer::intValue)
                 .max().orElse(0);
 
-        StreamStage<List<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
+        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
                 components.outlierDetection((outliers, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -453,7 +454,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                                                 W_distinct_list.get(z),
                                                 currentSlide
                                         ).withOutlierCount(allQueries[i][y][z]);
-                                        outliers.add(new Tuple<>(windowEnd, outlierQuery));
+                                        outliers.append(new Tuple<>(windowEnd, outlierQuery));
                                     }
                                 }
                             }
@@ -482,7 +483,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         );
 
         // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap(Traversers::traverseIterable);
+        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
         return flattenedResult;
     }
 

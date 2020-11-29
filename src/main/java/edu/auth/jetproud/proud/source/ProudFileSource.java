@@ -4,6 +4,7 @@ import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.pipeline.*;
 import edu.auth.jetproud.exceptions.ParserDeserializationException;
 import edu.auth.jetproud.exceptions.ProudException;
+import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.utils.ExceptionUtils;
 import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.model.AnyProudData;
@@ -15,6 +16,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, Serializable {
+
     private ProudContext proudContext;
     private String fileName = "input_20k.txt";
     private Parser<T> parser;
@@ -67,6 +69,7 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
         private String filePath;
         private Parser<T> parser;
         private transient BufferedReader reader;
+        private DistributedMap<String, Boolean> state = new DistributedMap<>("SOURCE_STATE");
 
         FileBufferedReaderContext(String filePath, Parser<T> parser) {
             this.filePath = filePath;
@@ -75,6 +78,9 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
 
         private BufferedReader getReader() {
             if (reader == null) {
+
+                state.put("DONE", false);
+
                 try {
                     File file = new File(filePath);
                     InputStreamReader inputStreamReader = new FileReader(file);
@@ -87,6 +93,9 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
             return reader;
         }
 
+        private boolean didBeginRead = false;
+        private boolean isReaderDone = false;
+
         public void fill(SourceBuilder.TimestampedSourceBuffer<T> buf) throws Exception {
             BufferedReader reader = getReader();
 
@@ -96,15 +105,28 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
                     throw new IOException("Input source \""+filePath+"\"not found.");
                 }
 
-                if (!reader.ready())
+                if (!reader.ready()) {
+
+                    if (didBeginRead) {
+                        isReaderDone = true;
+                    }
+
                     break;
+                }
 
                 String line = reader.readLine();
 
                 if (line == null) {
-                    buf.close();
+                    // Will never get here because of isReady()
+                    buf.close(); // Will throw on StreamSources despite being used in the Jet docs
+                    close();
                     break;
                 }
+
+                didBeginRead = true;
+
+                if (line.trim().length() == 0)
+                    continue;
 
                 T parsedObject = parser.parseString(line);
 
@@ -114,6 +136,8 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
 
                 buf.add(parsedObject, parsedObject.arrival);
             }
+
+            state.put("DONE", true);
         }
 
         void close() {
@@ -122,6 +146,7 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
 
                 if (reader != null)
                     reader.close();
+
             } catch (IOException e) {
                 throw ExceptionUtils.sneaky(e);
             }

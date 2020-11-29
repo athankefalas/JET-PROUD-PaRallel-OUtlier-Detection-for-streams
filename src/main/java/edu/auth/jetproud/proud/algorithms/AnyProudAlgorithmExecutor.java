@@ -60,7 +60,6 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
         long windowSize = proudContext.internalConfiguration().getCommonW();
         long windowSlideSize = proudContext.internalConfiguration().getCommonS();
 
-
         StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage = prepareStage(streamStage)
                 .window(WindowDefinition.sliding(windowSize,windowSlideSize))
                 .groupingKey(Tuple::getFirst)
