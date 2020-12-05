@@ -15,6 +15,7 @@ import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
@@ -26,7 +27,6 @@ import java.util.stream.Collectors;
 
 public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodProudData>
 {
-    public static final String STATES_KEY = "PMCOD_NET_STATES_KEY";
 
     public static class PMCODNetMicroCluster implements Serializable
     {
@@ -70,21 +70,12 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
     }
 
     @Override
-    public void createDistributableData() {
-        super.createDistributableData();
-        DistributedMap<String, PMCODNetState> stateMap = new DistributedMap<>(STATES_KEY);
-    }
-
-    @Override
     public List<ProudSpaceOption> supportedSpaceOptions() {
         return Lists.of(ProudSpaceOption.Single);
     }
 
     @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, McodProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        createDistributableData();
-        final DistributedMap<String, PMCODNetState> stateMap = new DistributedMap<>(STATES_KEY);
-
         final long windowSize = proudContext.internalConfiguration().getCommonW();
         final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
@@ -101,27 +92,27 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierDetection((outliers, window)->{
+        return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, PMCODNetState>create(),
+                (stateHolder, window) -> {
                     // Detect outliers and add them to outliers accumulator
+                    List<Tuple<Long, OutlierQuery>> outliers = Lists.make();
                     int partition = window.getKey();
 
                     long windowStart = window.start();
                     long windowEnd = window.end();
-                    long latestSlide = windowEnd - slide;
 
-                    final String STATE_KEY = "STATE";
+                    final String STATE_KEY = "STATE_"+partition;
 
                     List<McodProudData> elements = window.getValue().stream()
                             .map(Tuple::getSecond)
                             .filter((it)->it.arrival >= windowEnd - slide)
                             .collect(Collectors.toList());
 
-                    PMCODNetState current = stateMap.get(STATE_KEY);
+                    PMCODNetState current = stateHolder.get(STATE_KEY);
 
                     if (current == null) {
                         current = new PMCODNetState();
-                        stateMap.put(STATE_KEY, current);
+                        stateHolder.put(STATE_KEY, current);
                     }
 
                     final PMCODNet pmcodNet = new PMCODNet(current, outlierQuery);
@@ -164,7 +155,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                             .count();
 
                     OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
-                    outliers.append(new Tuple<>(windowEnd, queryCopy));
+                    outliers.add(new Tuple<>(windowEnd, queryCopy));
 
 
                     //Remove expiring points without removing clusters
@@ -175,15 +166,10 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
 
                     // If micro-cluster is needed as part of the distributed state remove the following line
                     current.mcCounter = new AtomicInteger(1);
-                    stateMap.put(STATE_KEY, current);
+                    stateHolder.put(STATE_KEY, current);
 
-                })
-        );
-
-
-        // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
-        return flattenedResult;
+                    return Traversers.traverseIterable(outliers);
+                });
     }
 
 

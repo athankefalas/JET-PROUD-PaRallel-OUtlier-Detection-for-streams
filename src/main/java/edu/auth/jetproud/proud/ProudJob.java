@@ -205,4 +205,9 @@ public class ProudJob implements Job
     public JobStateSnapshot exportSnapshot(String name) {
         return job.exportSnapshot(name);
     }
+
+    @Override
+    public String getSuspensionCause() {
+        return job.getSuspensionCause();
+    }
 }

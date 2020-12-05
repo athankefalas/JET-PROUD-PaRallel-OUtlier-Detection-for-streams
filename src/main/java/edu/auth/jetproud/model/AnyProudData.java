@@ -86,13 +86,17 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
     public boolean equals(Object other) {
         if (other instanceof AnyProudData) {
             AnyProudData otherData = (AnyProudData) other;
-            return id == otherData.id
+            boolean areEqual = id == otherData.id
                     && dimensions == otherData.dimensions
-                    && value.equals(other);
+                    && value.equals(otherData.value);
+
+            return areEqual;
         } else {
             return super.equals(other);
         }
     }
+
+
 
     @Override
     public String toString() {

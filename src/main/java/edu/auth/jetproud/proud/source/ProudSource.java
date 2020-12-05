@@ -3,6 +3,7 @@ package edu.auth.jetproud.proud.source;
 import com.hazelcast.jet.pipeline.Pipeline;
 import com.hazelcast.jet.pipeline.StreamSource;
 import com.hazelcast.jet.pipeline.StreamSourceStage;
+import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.source.streams.StreamGenerator;
@@ -13,11 +14,7 @@ import java.util.List;
 public interface ProudSource<T extends AnyProudData>
 {
 
-    StreamSource<T> createJetSource();
-
-    default StreamSourceStage<T> readInto(Pipeline pipeline) {
-        return pipeline.readFrom(createJetSource());
-    }
+    StreamStage<T> readInto(Pipeline pipeline);
 
 
     //// Factory Methods
@@ -54,16 +51,16 @@ public interface ProudSource<T extends AnyProudData>
         return new ProudFileSource<>(context,fileName, ProudFileSource.proudDataParser(fieldDelimiter,valueDelimiter));
     }
 
-    static ProudSource<AnyProudData> streaming(StreamGenerator streamGenerator) {
-        return new ProudStreamSource(streamGenerator);
+    static ProudSource<AnyProudData> streaming(ProudContext context, StreamGenerator streamGenerator) {
+        return new ProudStreamSource(context, streamGenerator);
     }
 
-    static ProudSource<AnyProudData> streamingRealTime(List<AnyProudData> data) {
-        return new ProudStreamSource(StreamGenerators.realTimeItemsIn(data));
+    static ProudSource<AnyProudData> streamingRealTime(ProudContext context, List<AnyProudData> data) {
+        return new ProudStreamSource(context, StreamGenerators.realTimeItemsIn(data));
     }
 
-    static ProudSource<AnyProudData> streamingSimulatedTime(List<AnyProudData> data) {
-        return new ProudStreamSource(StreamGenerators.simulatedTimeItemsIn(data));
+    static ProudSource<AnyProudData> streamingSimulatedTime(ProudContext context, List<AnyProudData> data) {
+        return new ProudStreamSource(context, StreamGenerators.simulatedTimeItemsIn(data));
     }
 
     static ProudSource<AnyProudData> kafkaSource(ProudContext context) {

@@ -21,6 +21,7 @@ import edu.auth.jetproud.proud.algorithms.KeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -33,9 +34,8 @@ import java.util.stream.Collectors;
 public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<SlicingProudData>
 {
     public static final Long OUTLIERS_TRIGGER = -1L;
-    public static final String DATA_STATE = "SLICING_DATA_STATE";
 
-    public static class SlicingState {
+    public static class SlicingState implements Serializable {
         public HashMap<Long, MTree<SlicingProudData>> trees;
         public HashMap<Long, HashSet<Integer>> triggers;
 
@@ -53,12 +53,6 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
     }
 
     @Override
-    public void createDistributableData() {
-        super.createDistributableData();
-        DistributedMap<String, SlicingState> stateMap = new DistributedMap<>(DATA_STATE);
-    }
-
-    @Override
     protected <D extends AnyProudData> SlicingProudData transform(D point) {
         return new SlicingProudData(point);
     }
@@ -70,10 +64,6 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
     @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, SlicingProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // Initialize distributed stateful data
-        createDistributableData();
-        final DistributedMap<String, SlicingState> stateMap = new DistributedMap<>(DATA_STATE);
-
         final long windowSize = proudContext.internalConfiguration().getCommonW();
         final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
@@ -90,18 +80,19 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierDetection((outliers, window)->{
+        return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, SlicingState>create(),
+                (stateHolder, window) -> {
                     // Detect outliers and add them to outliers accumulator
+                    List<Tuple<Long, OutlierQuery>> outliers = Lists.make();
                     int partition = window.getKey();
 
                     long windowStart = window.start();
                     long windowEnd = window.end();
                     long latestSlide = windowEnd - slide;
 
-                    final String STATE_KEY = "STATE";
+                    final String STATE_KEY = "STATE_"+partition;
 
-                    SlicingState current = stateMap.getOrDefault(STATE_KEY, null);
+                    SlicingState current = stateHolder.getOrDefault(STATE_KEY, null);
 
                     List<SlicingProudData> elements = window.getValue().stream()
                             .map(Tuple::getSecond)
@@ -134,7 +125,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                         trees.put(latestSlide, mTree);
 
                         current = new SlicingState(trees, triggers);
-                        stateMap.put(STATE_KEY, current);
+                        stateHolder.put(STATE_KEY, current);
                     } else {
                         List<SlicingProudData> activeElements = elements.stream()
                                 .filter((el)->el.arrival >= windowEnd - slide)
@@ -203,7 +194,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
                     int outliersCount = outlierData.size();
                     OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
-                    outliers.append(new Tuple<>(windowEnd, queryCopy));
+                    outliers.add(new Tuple<>(windowEnd, queryCopy));
 
                     //Trigger expiring list
                     current.trees.remove(windowStart);
@@ -213,13 +204,10 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                     elements.stream()
                             .filter((it)->triggeredIds.contains(it.id))
                             .forEach(slicing::triggerPoint);
-                })
-        );
 
-
-        // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
-        return flattenedResult;
+                    // Return results
+                    return Traversers.traverseIterable(outliers);
+                });
     }
 
     private static class Slicing implements Serializable
@@ -273,7 +261,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
 
             if (neighbourCount < k) {
-                state.triggers.get(-SlicingProudAlgorithmExecutor.OUTLIERS_TRIGGER)
+                state.triggers.get(SlicingProudAlgorithmExecutor.OUTLIERS_TRIGGER)
                         .add(point.id);
             }
 

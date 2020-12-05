@@ -19,7 +19,7 @@ import java.util.*;
  *               this type are stored in HashMaps and HashSets, so their
  *               {@code hashCode()} and {@code equals()} methods must be consistent.
  */
-public class MTree<DATA> implements Serializable
+public class MTree<DATA extends Serializable> implements Serializable
 {
 
     /**
@@ -37,11 +37,11 @@ public class MTree<DATA> implements Serializable
      * resources allocated were only the necessary to identify the <i>n</i>
      * first results.
      */
-    public class Query implements Iterable<ResultItem<DATA>> {
+    public class Query implements Iterable<ResultItem<DATA>>, Serializable {
 
-        private class ResultsIterator implements Iterator<ResultItem<DATA>> {
+        private class ResultsIterator implements Iterator<ResultItem<DATA>>, Serializable {
 
-            private class ItemWithDistances<U> implements Comparable<ItemWithDistances<U>> {
+            private class ItemWithDistances<U> implements Comparable<ItemWithDistances<U>>, Serializable {
                 private U item;
                 private double distance;
                 private double minDistance;
@@ -751,7 +751,7 @@ public class MTree<DATA> implements Serializable
     }
 
 
-    private class IndexItem {
+    private class IndexItem implements Serializable {
         DATA data;
         protected double radius;
         double distanceToParent;
@@ -780,7 +780,7 @@ public class MTree<DATA> implements Serializable
         }
     }
 
-    private abstract class Node extends IndexItem {
+    private abstract class Node extends IndexItem implements Serializable {
 
         protected Map<DATA, IndexItem> children = new HashMap<DATA, IndexItem>();
         protected Rootness rootness;
@@ -924,11 +924,11 @@ public class MTree<DATA> implements Serializable
         }
     }
 
-    private abstract class NodeTrait {
+    private abstract class NodeTrait implements Serializable {
         protected Node thisNode;
     }
 
-    private interface Leafness<DATA> {
+    private interface Leafness<DATA extends Serializable> extends Serializable {
         void doAddData(DATA data, double distance);
 
         void addChild(MTree<DATA>.IndexItem child, double distance);
@@ -940,7 +940,7 @@ public class MTree<DATA> implements Serializable
         void _checkChildClass(MTree<DATA>.IndexItem child);
     }
 
-    private interface Rootness {
+    private interface Rootness extends Serializable {
         int getMinCapacity();
 
         void _checkDistanceToParent();
@@ -948,7 +948,7 @@ public class MTree<DATA> implements Serializable
         void _checkMinCapacity();
     }
 
-    private class RootNodeTrait extends NodeTrait implements Rootness {
+    private class RootNodeTrait extends NodeTrait implements Rootness, Serializable {
 
         @Override
         public int getMinCapacity() {
@@ -1022,7 +1022,7 @@ public class MTree<DATA> implements Serializable
     class NonLeafNodeTrait extends NodeTrait implements Leafness<DATA> {
 
         public void doAddData(DATA data, double distance) {
-            class CandidateChild {
+            class CandidateChild implements Serializable {
                 Node node;
                 double distance;
                 double metric;
@@ -1228,7 +1228,7 @@ public class MTree<DATA> implements Serializable
         }
     }
 
-    private class RootLeafNode extends Node {
+    private class RootLeafNode extends Node implements Serializable{
 
         private RootLeafNode(DATA data) {
             super(data, new RootNodeTrait(), new LeafNodeTrait());
@@ -1252,7 +1252,7 @@ public class MTree<DATA> implements Serializable
         }
     }
 
-    private class RootNode extends Node {
+    private class RootNode extends Node implements Serializable {
 
         private RootNode(DATA data) {
             super(data, new RootNodeTrait(), new NonLeafNodeTrait());
@@ -1295,20 +1295,20 @@ public class MTree<DATA> implements Serializable
         }
     }
 
-    private class InternalNode extends Node {
+    private class InternalNode extends Node implements Serializable {
         private InternalNode(DATA data) {
             super(data, new NonRootNodeTrait(), new NonLeafNodeTrait());
         }
     }
 
-    private class LeafNode extends Node {
+    private class LeafNode extends Node implements Serializable {
 
         public LeafNode(DATA data) {
             super(data, new NonRootNodeTrait(), new LeafNodeTrait());
         }
     }
 
-    private class Entry extends IndexItem {
+    private class Entry extends IndexItem implements Serializable {
         private Entry(DATA data) {
             super(data);
         }

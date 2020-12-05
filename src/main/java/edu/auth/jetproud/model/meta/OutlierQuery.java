@@ -25,7 +25,7 @@ public class OutlierQuery implements Serializable
     }
 
     public OutlierQuery withOutlierCount(long outlierCount) {
-        return new OutlierQuery(range, kNeighbours, window, slide, this.outlierCount);
+        return new OutlierQuery(range, kNeighbours, window, slide, outlierCount);
     }
 
     public double getRange() {

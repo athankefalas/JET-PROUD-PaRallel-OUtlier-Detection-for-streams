@@ -16,6 +16,7 @@ import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.ArrayUtils;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
@@ -29,7 +30,6 @@ import java.util.stream.Collectors;
 
 public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYProudData>
 {
-    public static final String STATES_KEY = "PSOD_STATES_KEY";
 
     static class PSODState implements Serializable
     {
@@ -56,12 +56,6 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
     }
 
     @Override
-    public void createDistributableData() {
-        super.createDistributableData();
-        DistributedMap<String, PSODState> stateMap = new DistributedMap<>(STATES_KEY);
-    }
-
-    @Override
     public List<ProudSpaceOption> supportedSpaceOptions() {
         return Lists.of(
                 ProudSpaceOption.MultiQueryMultiParams,
@@ -71,9 +65,6 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
     @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        createDistributableData();
-        final DistributedMap<String, PSODState> stateMap = new DistributedMap<>(STATES_KEY);
-
         final long windowSize = proudContext.internalConfiguration().getCommonW();
         final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
@@ -123,27 +114,27 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
         final int k_size = k_distinct_list.size();
         final int R_size = R_distinct_list.size();
 
-        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierDetection((outliers, window)->{
+        return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, PSODState>create(),
+                (stateHolder, window) -> {
                     // Detect outliers and add them to outliers accumulator
+                    List<Tuple<Long,OutlierQuery>> outliers = Lists.make();
                     int partition = window.getKey();
 
                     long windowStart = window.start();
                     long windowEnd = window.end();
-                    long latestSlide = windowEnd - slide;
 
-                    final String STATE_KEY = "STATE";
+                    final String STATE_KEY = "STATE_"+partition;
 
                     List<LSKYProudData> elements = window.getValue().stream()
                             .map(Tuple::getSecond)
                             .filter((it)->it.arrival >= windowEnd - slide)
                             .collect(Collectors.toList());
 
-                    PSODState current = stateMap.get(STATE_KEY);
+                    PSODState current = stateHolder.get(STATE_KEY);
 
                     if (current == null) {
                         current = new PSODState(new HashMap<>());
-                        stateMap.put(STATE_KEY, current);
+                        stateHolder.put(STATE_KEY, current);
                     }
 
                     int[][] allQueries = ArrayUtils.multidimensionalWith(0, R_size, k_size);
@@ -151,12 +142,12 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
                     // Remove old points from each lSky
                     current.index.values().forEach((p) -> {
-                            p.lsky.keySet().forEach((l) -> {
-                                List<Tuple<Integer,Long>> value = p.lsky.get(l).stream()
-                                        .filter((it)->it.second >= windowStart)
-                                        .collect(Collectors.toList());
-                                p.lsky.put(l, value);
-                            });
+                        p.lsky.keySet().forEach((l) -> {
+                            List<Tuple<Integer,Long>> value = p.lsky.get(l).stream()
+                                    .filter((it)->it.second >= windowStart)
+                                    .collect(Collectors.toList());
+                            p.lsky.put(l, value);
+                        });
                     });
 
                     // Insert new elements
@@ -204,7 +195,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                                     outlierQueries.get(0).window,
                                     outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
-                            outliers.append(new Tuple<>(windowEnd, outlierQuery));
+                            outliers.add(new Tuple<>(windowEnd, outlierQuery));
                         }
                     }
 
@@ -215,20 +206,15 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .forEach(psod::deletePoint);
 
 
-                    stateMap.put(STATE_KEY, current);
-                })
-        );
+                    stateHolder.put(STATE_KEY, current);
 
-        // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
-        return flattenedResult;
+                    // Return results
+                    return Traversers.traverseIterable(outliers);
+                });
     }
 
     @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, LSKYProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        createDistributableData();
-        final DistributedMap<String, PSODState> stateMap = new DistributedMap<>(STATES_KEY);
-
         final long windowSize = proudContext.internalConfiguration().getCommonW();
         final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
@@ -311,28 +297,28 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                 .mapToLong(Long::longValue)
                 .max().orElse(0);
 
-        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierDetection((outliers, window)->{
+        return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, PSODState>create(),
+                (stateHolder, window) -> {
                     // Detect outliers and add them to outliers accumulator
+                    List<Tuple<Long,OutlierQuery>> outliers = Lists.make();
                     int partition = window.getKey();
 
                     long windowStart = window.start();
                     long windowEnd = window.end();
-                    long latestSlide = windowEnd - slide;
 
-                    final String STATE_KEY = "STATE";
+                    final String STATE_KEY = "STATE_"+partition;
 
                     List<LSKYProudData> elements = window.getValue().stream()
                             .map(Tuple::getSecond)
                             .filter((it)->it.arrival >= windowEnd - slide)
                             .collect(Collectors.toList());
 
-                    PSODState current = stateMap.get(STATE_KEY);
+                    PSODState current = stateHolder.get(STATE_KEY);
 
                     if (current == null) {
                         long currentSlide = windowEnd / slide;
                         current = new PSODState(new HashMap<>(), currentSlide);
-                        stateMap.put(STATE_KEY, current);
+                        stateHolder.put(STATE_KEY, current);
                     }
 
                     int[][][] allQueries = ArrayUtils.multidimensionalWith(0, R_size, k_size, W_size);
@@ -424,7 +410,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                                                 W_distinct_list.get(z),
                                                 currentSlide
                                         ).withOutlierCount(allQueries[i][y][z]);
-                                        outliers.append(new Tuple<>(windowEnd, outlierQuery));
+                                        outliers.add(new Tuple<>(windowEnd, outlierQuery));
                                     }
                                 }
                             }
@@ -440,13 +426,11 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .filter((it)-> it.arrival < windowStart + slide)
                             .forEach(psod::deletePoint);
 
-                    stateMap.put(STATE_KEY, current);
-                })
-        );
+                    stateHolder.put(STATE_KEY, current);
 
-        // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
-        return flattenedResult;
+                    // Return results
+                    return Traversers.traverseIterable(outliers);
+                });
     }
 
     private static final class PSOD implements Serializable

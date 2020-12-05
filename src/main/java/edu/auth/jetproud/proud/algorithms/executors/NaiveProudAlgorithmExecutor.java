@@ -18,6 +18,7 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -30,16 +31,8 @@ import java.util.stream.Collectors;
 
 public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<NaiveProudData>
 {
-    public static final String METADATA_STATE = "NAIVE_METADATA_STATE";
-
     public NaiveProudAlgorithmExecutor(ProudContext proudContext) {
         super(proudContext, ProudAlgorithmOption.Naive);
-    }
-
-    @Override
-    public void createDistributableData() {
-        super.createDistributableData();
-        DistributedMap<String, OutlierMetadata<NaiveProudData>> state = new DistributedMap<>(METADATA_STATE);
     }
 
     @Override
@@ -54,10 +47,6 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
     @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, NaiveProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // Initialize distributed stateful data
-        createDistributableData();
-        final DistributedMap<String, OutlierMetadata<NaiveProudData>> state = new DistributedMap<>(METADATA_STATE);
-
         final long windowSize = proudContext.internalConfiguration().getCommonW();
         final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
@@ -74,94 +63,83 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<AppendableTraverser<NaiveProudData>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierAggregation((outliers, window)->{
-                    // Detect outliers and add them to outliers accumulator
-                    int partition = window.getKey();
+        StreamStage<NaiveProudData> detectedOutliersStage = windowedStage.flatMap((window)->{
+            // Detect outliers and add them to outliers accumulator
+            List<NaiveProudData> outliers = Lists.make();
+            int partition = window.getKey();
 
-                    long windowStart = window.start();
-                    long windowEnd = window.end();
+            long windowStart = window.start();
+            long windowEnd = window.end();
 
-                    if (proudContext.configuration().getDebug()) {
-                        System.out.println("[-]\tPROUD:\tProcessing window "+partition
-                                +" from "+windowStart+" to "+windowEnd+" max arrival "
-                                +window.getValue().stream()
-                                .map((it)->it.second)
-                                .max(Comparator.comparingLong(AnyProudData::getArrival))
-                        );
+            List<NaiveProudData> windowItems = window.getValue().stream()
+                    .map(Tuple::getSecond)
+                    .filter((it)->it.arrival >= windowEnd - slide)
+                    .collect(Collectors.toList());
+
+            // Traverse all nodes in the window
+            for(NaiveProudData currentNode : windowItems) {
+
+                // Find current node neighbours
+                List<NaiveProudData> neighbours = windowItems.stream()
+                        .filter((it)->it.id != currentNode.id)
+                        .map((it)->new Tuple<>(it, Distances.distanceOf(currentNode, it)))
+                        .filter((it)->it.second <= R)
+                        .map(Tuple::getFirst)
+                        .collect(Collectors.toList());
+
+                // Update nodes before list and count after counter
+                // for each neighbour
+                for (NaiveProudData neighbour: neighbours) {
+                    if (neighbour.arrival < windowEnd - slide) {
+                        currentNode.insert_nn_before(neighbour.arrival, k);
+                    } else {
+                        currentNode.count_after++;
+
+                        if (currentNode.count_after >= k)
+                            currentNode.safe_inlier = true;
                     }
+                }
 
-                    List<NaiveProudData> windowItems = window.getValue().stream()
-                            .map(Tuple::getSecond)
-                            .filter((it)->it.arrival >= windowEnd - slide)
-                            .collect(Collectors.toList());
+                // Find nodes with non expired neighbours
+                List<NaiveProudData> activeNeighbours = windowItems.stream()
+                        .filter((it)->it.arrival < windowEnd - slide && neighbours.contains(it))
+                        .collect(Collectors.toList());
 
-                    // Traverse all nodes in the window
-                    for(NaiveProudData currentNode : windowItems) {
+                for (NaiveProudData neighbour: activeNeighbours) {
+                    neighbour.count_after++;
 
-                        // Find current node neighbours
-                        List<NaiveProudData> neighbours = windowItems.stream()
-                                .filter((it)->it.id != currentNode.id)
-                                .map((it)->new Tuple<>(it, Distances.distanceOf(currentNode, it)))
-                                .filter((it)->it.second <= R)
-                                .map(Tuple::getFirst)
-                                .collect(Collectors.toList());
+                    if (neighbour.count_after >= K)
+                        neighbour.safe_inlier = true;
+                }
+            }
 
-                        // Update nodes before list and count after counter
-                        // for each neighbour
-                        for (NaiveProudData neighbour: neighbours) {
-                            if (neighbour.arrival < windowEnd - slide) {
-                                currentNode.insert_nn_before(neighbour.arrival, k);
-                            } else {
-                                currentNode.count_after++;
+            // Add all non-safe inliers to the outliers accumulator
+            for (NaiveProudData currentNode : windowItems) {
+                if (!currentNode.safe_inlier)
+                    outliers.add(currentNode);
+            }
 
-                                if (currentNode.count_after >= k)
-                                    currentNode.safe_inlier = true;
-                            }
-                        }
+            return Traversers.traverseIterable(outliers);
+        });
 
-                        // Find nodes with non expired neighbours
-                        List<NaiveProudData> activeNeighbours = windowItems.stream()
-                                .filter((it)->it.arrival < windowEnd - slide && neighbours.contains(it))
-                                .collect(Collectors.toList());
-
-                        for (NaiveProudData neighbour: activeNeighbours) {
-                            neighbour.count_after++;
-
-                            if (neighbour.count_after >= K)
-                                neighbour.safe_inlier = true;
-                        }
-                    }
-
-                    // Add all non-safe inliers to the outliers accumulator
-                    for (NaiveProudData currentNode : windowItems) {
-                        if (!currentNode.safe_inlier)
-                            outliers.append(currentNode);
-                    }
-                })
-        );
 
         // Group Metadata
-        StreamStage<AppendableTraverser<Tuple<Long, OutlierQuery>>> outStage =
-                detectOutliersStage.flatMap((data)->{
-                    return data;
-                })
+        return detectedOutliersStage
                 .window(WindowDefinition.tumbling(windowSize))
                 .groupingKey((it)->it.id % partitionsCount)
                 .aggregate(components.metaWindowAggregator())
-                .rollingAggregate(
-                        components.metadataAggregation(NaiveProudData.class, (acc, window)->{
+                .flatMapStateful(()->KeyedStateHolder.<String, OutlierMetadata<NaiveProudData>>create(),
+                        (stateHolder, window) -> {
                             int windowKey = window.getKey();
 
                             long windowStart = window.start();
                             long windowEnd = window.end();
 
 
-
                             List<NaiveProudData> elements = window.getValue();
 
-                            final String METADATA_KEY = "METADATA";
-                            OutlierMetadata<NaiveProudData> current = state.get(METADATA_KEY);
+                            final String METADATA_KEY = "METADATA_"+windowKey;
+                            OutlierMetadata<NaiveProudData> current = stateHolder.get(METADATA_KEY);
 
                             // Create / Update state Map
                             if(current == null) {
@@ -210,7 +188,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                             }
 
                             // Write state
-                            state.put(METADATA_KEY, current);
+                            stateHolder.put(METADATA_KEY, current);
 
                             int outliers = 0;
 
@@ -224,15 +202,8 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                             }
 
                             OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliers);
-                            acc.append(new Tuple<>(windowEnd, queryCopy));
-                        })
-                );
-
-        // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = outStage.flatMap((data)->{
-            return data;
-        });
-        return flattenedResult;
+                            return Traversers.singleton(new Tuple<>(windowEnd, queryCopy));
+                        });
     }
 
 

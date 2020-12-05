@@ -21,6 +21,7 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -58,26 +59,12 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
     }
 
     @Override
-    public void createDistributableData() {
-        super.createDistributableData();
-        DistributedMap<String, AdvancedExtendedState> stateMap = new DistributedMap<>(DATA_STATE);
-    }
-
-    @Override
     public List<ProudSpaceOption> supportedSpaceOptions() {
         return Lists.of(ProudSpaceOption.Single);
     }
 
     @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AdvancedProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        // Initialize distributed stateful data
-        createDistributableData();
-        final DistributedMap<String, AdvancedExtendedState> stateMap = new DistributedMap<>(DATA_STATE);
-
-        final long windowSize = proudContext.internalConfiguration().getCommonW();
-        final int partitionsCount = proudContext.internalConfiguration().getPartitions();
-        ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
-
         // Create Outlier Query - Queries
         int w = proudContext.configuration().getWindowSizes().get(0);
         int s = proudContext.configuration().getSlideSizes().get(0);
@@ -90,17 +77,17 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
         final int K = outlierQuery.kNeighbours;
         final double R = outlierQuery.range;
 
-        StreamStage<AppendableTraverser<Tuple<Long, OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierDetection((outliers, window)->{
+        return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, AdvancedExtendedState>create(),
+                (stateHolder, window)->{
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
 
                     long windowStart = window.start();
                     long windowEnd = window.end();
 
-                    final String STATE_KEY = "STATE";
+                    final String STATE_KEY = "STATE_"+partition;
 
-                    AdvancedExtendedState current = stateMap.getOrDefault(STATE_KEY, null);
+                    AdvancedExtendedState current = stateHolder.getOrDefault(STATE_KEY, null);
 
                     List<AdvancedProudData> elements = window.getValue().stream()
                             .map(Tuple::getSecond)
@@ -188,9 +175,6 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                         }
                     }
 
-                    OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
-                    outliers.append(new Tuple<>(windowEnd, queryCopy));
-
                     // Remove expiring and flagged objects from MTree
                     List<AdvancedProudData> toRemove = elements.stream()
                             .filter((el) -> el.arrival < windowStart + slide)
@@ -202,18 +186,12 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                     }
 
                     // Update state
-                    stateMap.put(STATE_KEY, current);
+                    stateHolder.put(STATE_KEY, current);
 
-                })
-        );
-
-        // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((data)->{
-            return data;
-        });
-        return flattenedResult;
+                    // Return results
+                    OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
+                    return Traversers.singleton(new Tuple<>(windowEnd, queryCopy));
+                });
     }
-
-
 
 }

@@ -16,6 +16,7 @@ import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.ArrayUtils;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 import edu.auth.jetproud.utils.Lists;
@@ -28,7 +29,6 @@ import java.util.stream.Collectors;
 
 public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AmcodProudData>
 {
-    public static final String STATES_KEY = "AMCOD_STATES_KEY";
 
     public static class AMCODMicroCluster implements Serializable
     {
@@ -76,16 +76,7 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
     }
 
     @Override
-    public void createDistributableData() {
-        super.createDistributableData();
-        DistributedMap<String, AMCODState> stateMap = new DistributedMap<>(STATES_KEY);
-    }
-
-    @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AmcodProudData>>>> windowedStage) throws UnsupportedSpaceException {
-        createDistributableData();
-        final DistributedMap<String, AMCODState> stateMap = new DistributedMap<>(STATES_KEY);
-
         final long windowSize = proudContext.internalConfiguration().getCommonW();
         final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
@@ -135,27 +126,28 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
         final int k_size = k_distinct_list.size();
         final int R_size = R_distinct_list.size();
 
-        StreamStage<AppendableTraverser<Tuple<Long,OutlierQuery>>> detectOutliersStage = windowedStage.rollingAggregate(
-                components.outlierDetection((outliers, window)->{
+        return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, AMCODState>create(),
+                (stateHolder, window) -> {
                     // Detect outliers and add them to outliers accumulator
+                    List<Tuple<Long, OutlierQuery>> outliers = Lists.make();
+
                     int partition = window.getKey();
 
                     long windowStart = window.start();
                     long windowEnd = window.end();
-                    long latestSlide = windowEnd - slide;
 
-                    final String STATE_KEY = "STATE";
+                    final String STATE_KEY = "STATE_"+partition;
 
                     List<AmcodProudData> elements = window.getValue().stream()
                             .map(Tuple::getSecond)
                             .filter((it)->it.arrival >= windowEnd - slide)
                             .collect(Collectors.toList());
 
-                    AMCODState current = stateMap.get(STATE_KEY);
+                    AMCODState current = stateHolder.get(STATE_KEY);
 
                     if (current == null) {
                         current = new AMCODState();
-                        stateMap.put(STATE_KEY, current);
+                        stateHolder.put(STATE_KEY, current);
                     }
 
                     final AMCOD amcod = new AMCOD(current, R_min, R_max, k_min, k_max);
@@ -226,7 +218,7 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
                                     outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
 
-                            outliers.append(new Tuple<>(windowEnd, outlierQuery));
+                            outliers.add(new Tuple<>(windowEnd, outlierQuery));
                         }
                     }
 
@@ -263,14 +255,11 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
 
                     // If micro-cluster is needed as part of the distributed state remove the following line
                     current.mcCounter = new AtomicInteger(1);
-                    stateMap.put(STATE_KEY, current);
-                })
-        );
+                    stateHolder.put(STATE_KEY, current);
 
-
-        // Return flattened stream
-        StreamStage<Tuple<Long, OutlierQuery>> flattenedResult = detectOutliersStage.flatMap((it)->it);
-        return flattenedResult;
+                    // Return results
+                    return Traversers.traverseIterable(outliers);
+                });
     }
 
     private static class AMCOD implements Serializable

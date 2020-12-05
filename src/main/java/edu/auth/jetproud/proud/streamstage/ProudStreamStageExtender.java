@@ -79,10 +79,8 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
     @Override
     public ProudPartitionedStreamStage<AnyProudData> partition() throws Exception {
         final ProudPartitioning proudPartitioning = createProudPartitioning();
-        long allowedLag = proudContext.internalConfiguration().getAllowedLateness();
 
         StreamStage<PartitionedData<AnyProudData>> jetStreamStage = target.flatMap(proudPartitioning::jetPartition);
-                //.addTimestamps((it)->it.getData().arrival, allowedLag); //TODO: is this needed ??? because it throws
         return (ProudPartitionedStreamStage<AnyProudData>) ProxyExtension.of(jetStreamStage,
                 ProudPartitionedStreamStage.class,
                 new ProudPartitionedStreamStageExtender<AnyProudData>(proudContext)

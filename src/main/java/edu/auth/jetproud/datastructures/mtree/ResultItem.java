@@ -1,9 +1,11 @@
 package edu.auth.jetproud.datastructures.mtree;
 
+import java.io.Serializable;
+
 /**
  * The type of the results for nearest-neighbor queries.
  */
-public class ResultItem<DATA> {
+public class ResultItem<DATA> implements Serializable {
 
     protected ResultItem(DATA data, double distance) {
         this.data = data;

@@ -1,7 +1,10 @@
 package edu.auth.jetproud.proud.source;
 
 import com.hazelcast.jet.kafka.KafkaSources;
+import com.hazelcast.jet.pipeline.Pipeline;
+import com.hazelcast.jet.pipeline.Sources;
 import com.hazelcast.jet.pipeline.StreamSource;
+import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.KafkaConfiguration;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.context.ProudContext;
@@ -28,7 +31,14 @@ public class ProudKafkaSource<T extends AnyProudData> implements ProudSource<T> 
     }
 
     @Override
-    public StreamSource<T> createJetSource() {
+    public StreamStage<T> readInto(Pipeline pipeline) {
+        long allowedLag = proudContext.internalConfiguration().getAllowedLateness();
+
+        return pipeline.readFrom(createJetSource())
+                .withTimestamps((it)->it.arrival, allowedLag);
+    }
+
+    private StreamSource<T> createJetSource() {
         KafkaConfiguration kafkaConfig = proudContext.kafkaConfiguration();
 
         Properties props = new Properties();

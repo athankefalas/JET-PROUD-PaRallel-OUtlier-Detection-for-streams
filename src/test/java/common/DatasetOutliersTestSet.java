@@ -38,19 +38,24 @@ public class DatasetOutliersTestSet
         String line;
         Parser<Triple<Long, OutlierQuery, Long>> parser = lineParser();
 
+        int count = 0;
+
         while (true) {
             line = reader.readLine();
+            count++;
 
             if (line == null)
                 break;
 
-            if (line.equals("slide,query,outliers_count")) // Skip Header
-                continue;
-
             Triple<Long, OutlierQuery, Long> parsed = parser.parseString(line);
 
-            if (parsed == null)
-                throw new IOException("Unreadable file format.");
+            if (parsed == null || parsed.first == null || parsed.second == null || parsed.third == null) {
+                if (count == 1) {// Skip Header line
+                    continue;
+                } else { // Unreadable line
+                    throw new IOException("Unreadable file format.");
+                }
+            }
 
             lines.add(parsed);
         }
@@ -165,14 +170,25 @@ public class DatasetOutliersTestSet
         return lines.get(index).third;
     }
 
+    public long outlierCountOn(long slide) {
+        return lines.stream()
+                .filter((it)->it.first == slide)
+                .map((it)->it.first)
+                .findFirst()
+                .orElse(0L);
+    }
+
     public boolean matches(long slide, long outlierCount) {
+        if (lines == null)
+            return false;
+
         Triple<Long, OutlierQuery, Long> line = lines.stream()
                 .filter((it)->it.first == slide)
                 .findFirst()
                 .orElse(null);
 
         if (line == null)
-            return false;
+            return outlierCount == 0;
 
         return line.third == outlierCount;
     }

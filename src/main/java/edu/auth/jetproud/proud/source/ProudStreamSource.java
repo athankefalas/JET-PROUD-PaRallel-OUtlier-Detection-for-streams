@@ -1,8 +1,8 @@
 package edu.auth.jetproud.proud.source;
 
-import com.hazelcast.jet.pipeline.SourceBuilder;
-import com.hazelcast.jet.pipeline.StreamSource;
+import com.hazelcast.jet.pipeline.*;
 import edu.auth.jetproud.model.AnyProudData;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.source.streams.StreamGenerator;
 import edu.auth.jetproud.utils.Lists;
 
@@ -12,14 +12,24 @@ import java.util.List;
 public class ProudStreamSource implements ProudSource<AnyProudData>
 {
 
+    private ProudContext proudContext;
     private StreamGenerator streamGenerator;
 
-    public ProudStreamSource(StreamGenerator streamGenerator) {
+    public ProudStreamSource(ProudContext proudContext, StreamGenerator streamGenerator) {
+        this.proudContext = proudContext;
         this.streamGenerator = streamGenerator;
     }
 
+
     @Override
-    public StreamSource<AnyProudData> createJetSource() {
+    public StreamStage<AnyProudData> readInto(Pipeline pipeline) {
+        long allowedLag = proudContext.internalConfiguration().getAllowedLateness();
+
+        return pipeline.readFrom(createJetSource())
+                .withTimestamps((it)->it.arrival, allowedLag);
+    }
+
+    private StreamSource<AnyProudData> createJetSource() {
         return SourceBuilder
                 .stream("proud-stream-source", ctx -> new Context(streamGenerator))
                 .fillBufferFn(Context::appendTo)
