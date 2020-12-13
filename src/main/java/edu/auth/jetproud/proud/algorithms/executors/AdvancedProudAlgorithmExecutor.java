@@ -99,6 +99,8 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                 // Evict old elements
                 elements = Advanced.evict(elements, windowStart, windowEnd, slide);
 
+                List<AdvancedProudData> windowItems = Lists.copyOf(elements);
+
                 if (current == null) {
                     SplitFunction<AdvancedProudData> splitFunction = SplitFunction.composedOf(
                             PromotionFunction.minMax(),
@@ -166,8 +168,6 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                     element.safe_inlier = true;
                             }
                         }
-
-                        assert el.safe_inlier == element.safe_inlier;
                     }
 
                 }
@@ -176,7 +176,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                 outliers.addAll(current.map.values());
 
                 // Remove expiring and flagged objects from MTree
-                List<AdvancedProudData> toRemove = elements.stream()
+                List<AdvancedProudData> toRemove = windowItems.stream()
                         .filter((el) -> el.arrival < windowStart + slide || el.flag == 1)
                         .collect(Collectors.toList());
 

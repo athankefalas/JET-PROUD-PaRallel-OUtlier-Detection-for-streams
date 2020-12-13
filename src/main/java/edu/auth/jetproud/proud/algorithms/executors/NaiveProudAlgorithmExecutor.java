@@ -81,45 +81,15 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             // Evict old elements
             windowItems = Naive.evict(windowItems, windowStart, windowEnd, slide);
 
+            Naive naive = new Naive(windowStart, windowEnd, K, R, slide);
+
             List<NaiveProudData> elements = windowItems.stream()
                     .filter((it)->it.arrival >= windowEnd - slide)
                     .collect(Collectors.toList());
 
             // Traverse all nodes in the window
             for(NaiveProudData currentNode : elements) {
-
-                // Find current node neighbours
-                List<NaiveProudData> neighbours = windowItems.stream()
-                        .filter((it)->it.id != currentNode.id)
-                        .map((it)->new Tuple<>(it, Distances.distanceOf(currentNode, it)))
-                        .filter((it)->it.second <= R)
-                        .map(Tuple::getFirst)
-                        .collect(Collectors.toList());
-
-                // Update nodes before list and count after counter
-                // for each neighbour
-                for (NaiveProudData neighbour: neighbours) {
-                    if (neighbour.arrival < windowEnd - slide) {
-                        currentNode.insert_nn_before(neighbour.arrival, k);
-                    } else {
-                        currentNode.count_after++;
-
-                        if (currentNode.count_after >= k)
-                            currentNode.safe_inlier = true;
-                    }
-                }
-
-                // Find nodes with non expired neighbours
-                List<NaiveProudData> activeNeighbours = windowItems.stream()
-                        .filter((it)->it.arrival < windowEnd - slide && neighbours.contains(it))
-                        .collect(Collectors.toList());
-
-                for (NaiveProudData neighbour: activeNeighbours) {
-                    neighbour.count_after++;
-
-                    if (neighbour.count_after >= K)
-                        neighbour.safe_inlier = true;
-                }
+                naive.refreshList(currentNode, windowItems);
             }
 
             // Add all non-safe in-liers to the outliers accumulator
@@ -227,6 +197,55 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             });
 
             return evicted;
+        }
+
+        long windowStart;
+        long windowEnd;
+
+        int K;
+        double R;
+        int slide;
+
+        public Naive(long windowStart, long windowEnd, int k, double r, int slide) {
+            this.windowStart = windowStart;
+            this.windowEnd = windowEnd;
+            K = k;
+            R = r;
+            this.slide = slide;
+        }
+
+        public void refreshList(NaiveProudData node, List<NaiveProudData> nodes) {
+            if (nodes.isEmpty())
+                return;
+
+            List<NaiveProudData> neighbours = nodes.stream()
+                    .filter((it) -> it.id != node.id)
+                    .filter((it) -> Distances.distanceOf(it, node) <= R)
+                    .collect(Collectors.toList());
+
+            for (NaiveProudData neighbour: neighbours) {
+                if (neighbour.arrival < windowEnd - slide) {
+                    node.insert_nn_before(neighbour.arrival, K);
+                } else {
+                    node.count_after += 1;
+
+                    if (node.count_after >= K) {
+                        node.safe_inlier = true;
+                    }
+                }
+            }
+
+            List<NaiveProudData> active = nodes.stream()
+                    .filter((it) -> it.arrival < windowEnd - slide && neighbours.stream().anyMatch((n)->n.id == it.id))
+                    .collect(Collectors.toList());
+
+            // Add new neighbor to previous nodes
+            for (NaiveProudData neighbour: active) {
+                neighbour.count_after += 1;
+
+                if (neighbour.count_after >= K)
+                    neighbour.safe_inlier = true;
+            }
         }
 
         public static NaiveProudData combineElements(NaiveProudData one, NaiveProudData other, int k) {

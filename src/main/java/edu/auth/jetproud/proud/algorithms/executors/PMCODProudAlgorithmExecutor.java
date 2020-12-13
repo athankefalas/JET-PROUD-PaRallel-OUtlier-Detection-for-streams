@@ -124,11 +124,11 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
 
                     // Find outliers
                     long outliersCount = current.pd.values().stream()
+                            .filter((p)-> !p.safe_inlier && p.flag == 0)
                             .filter((p)->{
-                                return !p.safe_inlier && p.flag == 0 && (p.count_after + p.nn_before.stream()
+                                return p.count_after + p.nn_before.stream()
                                         .filter((key)-> key >= windowStart)
-                                        .mapToLong(Long::longValue)
-                                        .sum() < k);
+                                        .count() < k;
                             })
                             .count();
 

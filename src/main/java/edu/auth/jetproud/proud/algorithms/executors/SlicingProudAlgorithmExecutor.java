@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<SlicingProudData>
 {
-    public static final Long OUTLIERS_TRIGGER = -1L;
+    public static final Long OUTLIERS_TRIGGER = Long.MIN_VALUE;
 
     public static class SlicingState implements Serializable {
         public HashMap<Long, MTree<SlicingProudData>> trees;
@@ -154,7 +154,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                             .collect(Collectors.toList());
 
                     for (Long slowTrigger: slowTriggers) {
-                        List<Integer> triggerPointIds = Lists.copyOf(current.triggers.get(slowTrigger));
+                        final HashSet<Integer> triggerPointIds = current.triggers.get(slowTrigger);
 
                         List<SlicingProudData> triggerPoints = elements.stream()
                                 .filter((it)-> triggerPointIds.contains(it.id))
@@ -182,12 +182,12 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
                     // Find and Report outliers
                     List<SlicingProudData> outlierData = elements.stream()
+                            .filter((it)-> !it.safe_inlier && it.flag == 0)
                             .filter((it)-> {
-                                return it.flag == 0 && !it.safe_inlier
-                                        && (it.count_after + it.slices_before.keySet().stream()
+                                return it.count_after + it.slices_before.keySet().stream()
                                         .filter((key)-> key >= windowStart)
                                         .mapToInt((key)->it.slices_before.get(key))
-                                        .sum()) < k;
+                                        .sum() < k;
                             })
                             .collect(Collectors.toList());
 
