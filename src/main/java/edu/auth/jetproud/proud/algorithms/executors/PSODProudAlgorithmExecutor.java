@@ -485,7 +485,6 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
                 el.lsky.put(dist_key, value);
             }else if(el.flag == 0 && el.lsky.getOrDefault(dist_key, Lists.make()).size() == K_max){
-                //val (minId, minArr) = el.lSky(norm_dist).minBy(_._2)
                 Tuple<Integer, Long> min = el.lsky.get(dist_key).stream()
                         .min(Comparator.comparingLong(Tuple::getSecond))
                         .orElse(new Tuple<>(-1, 0L));
@@ -510,7 +509,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
                     neigh.lsky.put(dist_key, value);
                 }else if(el.flag == 0 && el.lsky.getOrDefault(dist_key, Lists.make()).size() == K_max){
-                    Tuple<Integer, Long> min = neigh.lsky.get(dist_key).stream()
+                    Tuple<Integer, Long> min = neigh.lsky.getOrDefault(dist_key, Lists.make()).stream()
                             .min(Comparator.comparingLong(Tuple::getSecond))
                             .orElse(new Tuple<>(-1, 0L));
 

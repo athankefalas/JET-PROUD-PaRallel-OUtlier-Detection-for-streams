@@ -39,7 +39,7 @@ public class NaiveProudData extends AnyProudData
         if (k != 0 && nn_before.size() == k) {
             long tmp = nn_before.stream()
                     .min(Long::compareTo)
-                    .get(); // Unsafe optional unwrapping is safe due to above check
+                    .orElse(0L);
 
             if (el > tmp) {
                 nn_before.remove(tmp);
@@ -53,7 +53,10 @@ public class NaiveProudData extends AnyProudData
 
     //Get the minimum of preceding neighbors
     public Long get_min_nn_before(long time) {
-        return nn_before.stream()
+        if (nn_before.stream().noneMatch(it -> it >= time))
+            return 0L;
+        else
+            return nn_before.stream()
                 .filter((it)->it>=time)
                 .min(Long::compareTo)
                 .orElse(0L);

@@ -135,7 +135,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
                         long max = current.triggers.keySet().stream()
                                 .max(Long::compare)
-                                .orElse(windowStart);
+                                .orElse(windowStart) + slide;
 
                         while (max <= windowEnd - slide) {
                             current.triggers.put(max, new HashSet<>());
@@ -145,7 +145,6 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                         current.trees.put(latestSlide, mTree);
                     }
 
-                    // Declare common vars needed by AlgorithmUtils class
                     KeyedWindow<SlicingProudData> windowRef = new KeyedWindow<>(partition, windowStart, windowEnd, elements);
                     final Slicing slicing = new Slicing(windowRef, outlierQuery, current);
 
@@ -170,7 +169,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
                     //Insert new points
                     elements.stream()
-                            .filter((it)->it.arrival >=windowEnd - slide && it.flag == 0)
+                            .filter((it)->it.arrival >= windowEnd - slide && it.flag == 0)
                             .forEach(slicing::insertPoint);
 
                     //Trigger previous outliers
@@ -185,10 +184,10 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                     List<SlicingProudData> outlierData = elements.stream()
                             .filter((it)-> {
                                 return it.flag == 0 && !it.safe_inlier
-                                        && it.count_after + it.slices_before.keySet().stream()
+                                        && (it.count_after + it.slices_before.keySet().stream()
                                         .filter((key)-> key >= windowStart)
                                         .mapToInt((key)->it.slices_before.get(key))
-                                        .sum() < k;
+                                        .sum()) < k;
                             })
                             .collect(Collectors.toList());
 
@@ -229,14 +228,15 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
             long nextSlide;
 
+            // Find starting slide
             if (point.last_check != 0L)
                 nextSlide = point.last_check + slideDuration;
             else
-                nextSlide = getSlide(point.arrival, slideDuration);
+                nextSlide = getSlide(point.arrival) + slideDuration;
 
             //Find number of neighbors
             int neighbourCount = point.count_after + point.slices_before.keySet().stream()
-                    .filter((it) -> it > window.start + slideDuration)
+                    .filter((it) -> it >= window.start + slideDuration)
                     .mapToInt((it) -> point.slices_before.get(it))
                     .sum();
 
@@ -267,10 +267,11 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
         }
 
-        private long getSlide(long arrivalTime, long slideDuration) {
+        private long getSlide(long arrivalTime) {
             long first = arrivalTime - window.start;
-            long div = first / slideDuration;
-            return window.start + (div * slideDuration);
+            long div = first / query.slide;
+            int intDiv = (int) div;
+            return window.start + ((long) intDiv * query.slide);
         }
 
         public void insertPoint(SlicingProudData point) {

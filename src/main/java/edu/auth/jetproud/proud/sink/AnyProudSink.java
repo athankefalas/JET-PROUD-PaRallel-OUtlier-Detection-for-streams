@@ -32,11 +32,11 @@ public abstract class AnyProudSink<T> implements ProudSink<T>
 
     @Override
     public final StreamStage<T> convertStage(StreamStage<Tuple<Long, OutlierQuery>> streamStage) {
-        long windowSize = proudContext.internalConfiguration().getCommonW();
+        long slideSize = proudContext.internalConfiguration().getCommonS();
 
         return streamStage
                 .groupingKey(Tuple::getKey)
-                .window(WindowDefinition.sliding(windowSize, 5000))
+                .window(WindowDefinition.tumbling(slideSize))
                 .aggregate(
                         AggregateOperation.withCreate(()->new AppendableTraverser<Tuple<Long, OutlierQuery>>(100000))
                             .<Tuple<Long, OutlierQuery>>andAccumulate((acc, it)-> acc.append(it))

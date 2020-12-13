@@ -29,6 +29,6 @@ public class SlicingProudData extends AnyProudData
         count_after = 0;
         slices_before = new HashMap<>();
         safe_inlier = false;
-        last_check = 0;
+        last_check = 0L;
     }
 }

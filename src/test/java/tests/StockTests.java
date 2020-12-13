@@ -1,3 +1,5 @@
+package tests;
+
 import com.hazelcast.jet.Job;
 import com.hazelcast.jet.pipeline.Sinks;
 import common.DatasetOutliersTestSet;
@@ -139,7 +141,7 @@ public class StockTests
 
     @Order(3)
     @Test
-    @DisplayName("Stocks: Naive - Repl") // Last passed on: -
+    @DisplayName("Stocks: Naive - Repl") // Last passed on: X
     public void stocksNaive() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -162,7 +164,7 @@ public class StockTests
 
     @Order(4)
     @Test
-    @DisplayName("Stocks: Advanced - Repl") // Last passed on: -
+    @DisplayName("Stocks: Advanced - Repl") // Last passed on: X
     public void stocksAdvanced() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -184,7 +186,7 @@ public class StockTests
 
     @Order(5)
     @Test
-    @DisplayName("Stocks: Advanced Extended - Tree") // Last passed on: -
+    @DisplayName("Stocks: Advanced Extended - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
     public void stocksAdvancedExt_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -204,7 +206,7 @@ public class StockTests
 
     @Order(6)
     @Test
-    @DisplayName("Stocks: Advanced Extended - Grid") // Last passed on: -
+    @DisplayName("Stocks: Advanced Extended - Grid") // Last passed on: 6/12/2020 ~ first 14 slides
     public void stocksAdvancedExt_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -226,7 +228,7 @@ public class StockTests
 
     @Order(7)
     @Test
-    @DisplayName("Stocks: Slicing - Tree") // Last passed on: -
+    @DisplayName("Stocks: Slicing - Tree") // Last passed on: X
     public void stocksSlicing_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -246,7 +248,7 @@ public class StockTests
 
     @Order(8)
     @Test
-    @DisplayName("Stocks: Slicing - Grid") // Last passed on: -
+    @DisplayName("Stocks: Slicing - Grid") // Last passed on: X
     public void stocksSlicing_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -268,7 +270,7 @@ public class StockTests
 
     @Order(9)
     @Test
-    @DisplayName("Stocks: PMCOD - Tree") // Last passed on: -
+    @DisplayName("Stocks: PMCOD - Tree") // Last passed on: X
     public void stocksPMCOD_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -288,7 +290,7 @@ public class StockTests
 
     @Order(10)
     @Test
-    @DisplayName("Stocks: PMCOD - Grid") // Last passed on: -
+    @DisplayName("Stocks: PMCOD - Grid") // Last passed on: X
     public void stocksPMCOD_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -311,7 +313,7 @@ public class StockTests
 
     @Order(11)
     @Test
-    @DisplayName("Stocks: PMCOD Net - Tree") // Last passed on: -
+    @DisplayName("Stocks: PMCOD Net - Tree") // Last passed on: X
     public void stocksPMCODNet_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -331,7 +333,7 @@ public class StockTests
 
     @Order(12)
     @Test
-    @DisplayName("Stocks: PMCOD Net - Grid") // Last passed on: -
+    @DisplayName("Stocks: PMCOD Net - Grid") // Last passed on: X
     public void stocksPMCODNet_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -357,7 +359,7 @@ public class StockTests
 
     @Order(13)
     @Test
-    @DisplayName("Stocks: AMCOD - Tree") // Last passed on: -
+    @DisplayName("Stocks: AMCOD - Tree") // Last passed on: ~
     public void stocksAMCOD_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -377,7 +379,7 @@ public class StockTests
 
     @Order(14)
     @Test
-    @DisplayName("Stocks: AMCOD - Grid") // Last passed on: -
+    @DisplayName("Stocks: AMCOD - Grid") // Last passed on: ~
     public void stocksAMCOD_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -399,7 +401,7 @@ public class StockTests
 
     @Order(15)
     @Test
-    @DisplayName("Stocks: SOP - Tree") // Last passed on: -
+    @DisplayName("Stocks: SOP - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
     public void stocksSOP_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -419,7 +421,7 @@ public class StockTests
 
     @Order(16)
     @Test
-    @DisplayName("Stocks: SOP - Grid") // Last passed on: -
+    @DisplayName("Stocks: SOP - Grid") // Last passed on: X
     public void stocksSOP_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -442,7 +444,7 @@ public class StockTests
 
     @Order(17)
     @Test
-    @DisplayName("Stocks: PSOD - Tree") // Last passed on: -
+    @DisplayName("Stocks: PSOD - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
     public void stocksPSOD_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -462,7 +464,7 @@ public class StockTests
 
     @Order(18)
     @Test
-    @DisplayName("Stocks: PSOD - Grid") // Last passed on: -
+    @DisplayName("Stocks: PSOD - Grid") // Last passed on: NullPointerException @ PSODProudAlExecutor LN 513 IN addNeighbour
     public void stocksPSOD_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -485,7 +487,7 @@ public class StockTests
 
     @Order(19)
     @Test
-    @DisplayName("Stocks: PMCSky - Tree") // Last passed on: -
+    @DisplayName("Stocks: PMCSky - Tree") // Last passed on: ~
     public void stocksPMCSky_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -505,7 +507,7 @@ public class StockTests
 
     @Order(20)
     @Test
-    @DisplayName("Stocks: PMCSky - Grid") // Last passed on: -
+    @DisplayName("Stocks: PMCSky - Grid") // Last passed on: IndexOBException PMCSkyProudAlgExec LN 714 IN deletePoint
     public void stocksPMCSky_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -520,6 +522,7 @@ public class StockTests
                 .enablingDebug()
                 .build();
 
+        testExecuteProud(proud);
     }
 
 
@@ -530,7 +533,7 @@ public class StockTests
 
     @Order(21)
     @Test
-    @DisplayName("Stocks: SOP - Tree - MW") // Last passed on: -
+    @DisplayName("Stocks: SOP - Tree - MW") // Last passed on: 6/12/2020 ~ first 14 slides
     public void stocksSOP_Tree_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -550,7 +553,7 @@ public class StockTests
 
     @Order(22)
     @Test
-    @DisplayName("Stocks: SOP - Grid - MW") // Last passed on: -
+    @DisplayName("Stocks: SOP - Grid - MW") // Last passed on: X
     public void stocksSOP_Grid_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -573,7 +576,7 @@ public class StockTests
 
     @Order(23)
     @Test
-    @DisplayName("Stocks: PSOD - Tree - MW") // Last passed on: -
+    @DisplayName("Stocks: PSOD - Tree - MW") // Last passed on: STUCK AFTER SLIDE 1
     public void stocksPSOD_Tree_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -593,7 +596,7 @@ public class StockTests
 
     @Order(24)
     @Test
-    @DisplayName("Stocks: PSOD - Grid - MW") // Last passed on: -
+    @DisplayName("Stocks: PSOD - Grid - MW") // Last passed on: NullPointerException PSODProudAlgExec LN 513 addNeighbour
     public void stocksPSOD_Grid_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -616,7 +619,7 @@ public class StockTests
 
     @Order(25)
     @Test
-    @DisplayName("Stocks: PMCSky - Tree - MW") // Last passed on: -
+    @DisplayName("Stocks: PMCSky - Tree - MW") // Last passed on: Index out of bounds EX @ PMCSktProudAlgExec LN 873 IN deleteSmallWindowPoint
     public void stocksPMCSky_Tree_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
@@ -636,7 +639,7 @@ public class StockTests
 
     @Order(26)
     @Test
-    @DisplayName("Stocks: PMCSky - Grid - MW") // Last passed on: -
+    @DisplayName("Stocks: PMCSky - Grid - MW") // Last passed on: Index Out of Bounds EX @ LN 873
     public void stocksPMCSky_Grid_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 

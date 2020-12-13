@@ -167,7 +167,7 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                     }
 
                     // If micro-cluster is needed as part of the distributed state remove the following line
-                    current.mcCounter = new AtomicInteger(1);
+                    //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
 
                     // Return results
@@ -196,7 +196,7 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                     .min(Comparator.comparingDouble(Tuple::getSecond))
                     .orElse(new Tuple<>(0, Double.MAX_VALUE));
 
-            if (closestMC.second < outlierQuery.range / 2.0) {
+            if (closestMC.second <= outlierQuery.range / 2.0) {
 
                 if (newPoint) { //Insert element to MC
                     insertToMicroCluster(el, closestMC.first, true, new ArrayList<>());
@@ -211,7 +211,7 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                 //
                 List<Tuple<Double, McodProudData>> nearItems = state.pd.values().stream()
                         .map(val -> new Tuple<>(Distances.distanceOf(el, val), val))
-                        .filter((it) -> it.first <= 3 * (outlierQuery.range / 2.0))
+                        .filter((it) -> it.first <= (3.0 * outlierQuery.range) / 2.0)
                         .collect(Collectors.toList());
 
                 for (Tuple<Double, McodProudData> item: nearItems) {
@@ -302,7 +302,6 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
 
         private void insertToMicroCluster(McodProudData el, int mc, boolean update, List<Integer> reinsertIds) {
             el.clear(mc);
-
             state.mc.get(mc).points.add(el);
 
             List<McodProudData> values = state.pd.values().stream()
@@ -328,14 +327,13 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
             }
         }
 
-
         private Map<Integer,Double> findCloseMicroClusters(McodProudData el) {
             final double R = outlierQuery.range;
             Map<Integer,Double> res = new HashMap<>();
 
             state.mc.entrySet().stream()
                     .map((entry) -> new Tuple<>(entry.getKey(), Distances.distanceOf(el, new EuclideanCoordinateList<>(entry.getValue().center))))
-                    .filter((it)-> it.second <= (3 * R) / 2)
+                    .filter((it)-> it.second <= (3.0 * R) / 2.0)
                     .forEach((it)->res.put(it.first, it.second));
 
             return res;

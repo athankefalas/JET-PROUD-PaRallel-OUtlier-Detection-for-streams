@@ -64,6 +64,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
     @Override
     protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AdvancedProudData>>>> windowedStage) throws UnsupportedSpaceException {
         final long windowSize = proudContext.internalConfiguration().getCommonW();
+        final long slideSize = proudContext.internalConfiguration().getCommonS();
         final int partitionsCount = proudContext.internalConfiguration().getPartitions();
         ProudComponentBuilder components = ProudComponentBuilder.create(proudContext);
 
@@ -89,12 +90,14 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                 long windowEnd = window.end();
 
                 final String STATE_KEY = "STATE_"+partition;
-
                 AdvancedState current = stateHolder.getOrDefault(STATE_KEY, null);
 
                 List<AdvancedProudData> elements = window.getValue().stream()
                         .map(Tuple::getSecond)
                         .collect(Collectors.toList());
+
+                // Evict old elements
+                elements = Advanced.evict(elements, windowStart, windowEnd, slide);
 
                 if (current == null) {
                     SplitFunction<AdvancedProudData> splitFunction = SplitFunction.composedOf(
@@ -102,7 +105,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                             PartitionFunction.balanced()
                     );
 
-                    MTree<AdvancedProudData> mTree = new MTree<>(k, DistanceFunction.euclidean(), splitFunction);
+                    MTree<AdvancedProudData> mTree = new MTree<>(K, DistanceFunction.euclidean(), splitFunction);
                     current = new AdvancedState(mTree, new HashMap<>());
 
                     for(AdvancedProudData el:elements) {
@@ -127,8 +130,10 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                     }
                 }
 
+                // Get Neighbours
                 for (AdvancedProudData el: elements) {
-                    MTree<AdvancedProudData>.Query treeQuery = current.mTree.getNearestByRange(el, r);
+
+                    MTree<AdvancedProudData>.Query treeQuery = current.mTree.getNearestByRange(el, R);
 
                     for (ResultItem<AdvancedProudData> item:treeQuery) {
                         AdvancedProudData node = item.data;
@@ -143,12 +148,14 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
                             element.insert_nn_before(node.arrival, k);
 
-                            if (neighbour != null) {
-                                neighbour.count_after++;
+                            // Add explicit neighbour nullability check due to null pointer exception
+                            if (neighbour == null)
+                                neighbour = node;
 
-                                if (neighbour.count_after >= k)
-                                    neighbour.safe_inlier = true;
-                            }
+                            neighbour.count_after++;
+
+                            if (neighbour.count_after >= k)
+                                neighbour.safe_inlier = true;
 
                         } else {
 
@@ -159,7 +166,10 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                     element.safe_inlier = true;
                             }
                         }
+
+                        assert el.safe_inlier == element.safe_inlier;
                     }
+
                 }
 
                 // Add outliers to accumulator
@@ -184,7 +194,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
         // Group Metadata
         return detectedOutliersStage
-                .window(WindowDefinition.tumbling(windowSize))
+                .window(WindowDefinition.tumbling(slideSize))
                 .groupingKey((it)->it.id % partitionsCount)
                 .aggregate(components.metaWindowAggregator())
                 .flatMapStateful(()-> KeyedStateHolder.<String, OutlierMetadata<AdvancedProudData>>create(),
@@ -214,7 +224,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
                                 // Remove old elements
                                 current.getOutliers().values()
-                                        .removeIf((el) -> el.arrival < windowEnd - windowSize);
+                                        .removeIf((el) -> el.arrival < windowEnd - w);
 
                                 // Then insert or combine elements
                                 for (AdvancedProudData el:elements) {
@@ -257,11 +267,17 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
     private static class Advanced implements Serializable
     {
-        public static AdvancedProudData combineOldElements(AdvancedProudData one, AdvancedProudData other, int k) {
-            if (one == null || other == null) {
-                return edu.auth.jetproud.utils.Utils.firstNonNull(one, other);
-            }
+        public static List<AdvancedProudData> evict(List<AdvancedProudData> windowData,long windowStart, long windowEnd, long slide) {
+            List<AdvancedProudData> evicted = Lists.copyOf(windowData);
 
+            evicted.removeIf((it)->{
+                return it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide;
+            });
+
+            return evicted;
+        }
+
+        public static AdvancedProudData combineOldElements(AdvancedProudData one, AdvancedProudData other, int k) {
             one.count_after = other.count_after;
             one.safe_inlier = other.safe_inlier;
 
@@ -273,7 +289,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                 return edu.auth.jetproud.utils.Utils.firstNonNull(one, other);
             }
 
-            if (one.flag == other.flag && one.flag == 1) {
+            if (one.flag == 1 && other.flag == 1) {
                 other.nn_before.forEach((it)->one.insert_nn_before(it, k));
                 return one;
             } else if (other.flag == 0) {

@@ -173,7 +173,7 @@ public class DatasetOutliersTestSet
     public long outlierCountOn(long slide) {
         return lines.stream()
                 .filter((it)->it.first == slide)
-                .map((it)->it.first)
+                .map((it)->it.third)
                 .findFirst()
                 .orElse(0L);
     }

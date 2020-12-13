@@ -165,7 +165,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                             .forEach(pmcodNet::deletePoint);
 
                     // If micro-cluster is needed as part of the distributed state remove the following line
-                    current.mcCounter = new AtomicInteger(1);
+                    //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
 
                     return Traversers.traverseIterable(outliers);
@@ -194,7 +194,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                     .min(Comparator.comparingDouble(Tuple::getSecond))
                     .orElse(new Tuple<>(0, Double.MAX_VALUE));
 
-            if (closestMC.second < outlierQuery.range / 2.0) {
+            if (closestMC.second <= outlierQuery.range / 2.0) {
 
                 if (newPoint) { //Insert element to MC
                     insertToMicroCluster(el, closestMC.first, true, new ArrayList<>());
@@ -209,7 +209,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                 //
                 List<Tuple<Double, McodProudData>> nearItems = state.pd.values().stream()
                         .map(val -> new Tuple<>(Distances.distanceOf(el, val), val))
-                        .filter((it) -> it.first <= 3 * (outlierQuery.range / 2.0))
+                        .filter((it) -> it.first <= (3.0 * outlierQuery.range) / 2.0)
                         .collect(Collectors.toList());
 
                 for (Tuple<Double, McodProudData> item: nearItems) {
@@ -332,7 +332,7 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
 
             state.mc.entrySet().stream()
                     .map((entry) -> new Tuple<>(entry.getKey(), Distances.distanceOf(el, new EuclideanCoordinateList<>(entry.getValue().center))))
-                    .filter((it)-> it.second <= (3 * R) / 2)
+                    .filter((it)-> it.second <= (3.0 * R) / 2.0)
                     .forEach((it)->res.put(it.first, it.second));
 
             return res;

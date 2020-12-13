@@ -5,6 +5,13 @@ import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.context.Proud;
 import edu.auth.jetproud.proud.pipeline.ProudPipeline;
 import edu.auth.jetproud.proud.source.ProudSource;
+import edu.auth.jetproud.utils.Lists;
+import edu.auth.jetproud.utils.Tuple;
+
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ApplicationMain {
 

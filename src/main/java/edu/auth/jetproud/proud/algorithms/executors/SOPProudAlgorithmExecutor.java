@@ -24,6 +24,7 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYProudData>
@@ -32,14 +33,14 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
     static class SOPState implements Serializable
     {
         public HashMap<Integer, LSKYProudData> index;
-        public long slideCount;
+        public AtomicLong slideCount;
 
         public SOPState(HashMap<Integer, LSKYProudData> index) {
             this(index, 1);
         }
 
         public SOPState(HashMap<Integer, LSKYProudData> index, long slideCount) {
-            this.slideCount = slideCount;
+            this.slideCount = new AtomicLong(slideCount);
             this.index = index;
         }
     }
@@ -84,13 +85,13 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
         final int slide = outlierQueries.get(0).slide;
 
-        List<Double> R_distinct_list = outlierQueries.stream()
+        final List<Double> R_distinct_list = outlierQueries.stream()
                 .map(OutlierQuery::getRange)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
 
-        List<Integer> k_distinct_list = outlierQueries.stream()
+        final List<Integer> k_distinct_list = outlierQueries.stream()
                 .map(OutlierQuery::getKNeighbours)
                 .distinct()
                 .sorted()
@@ -164,6 +165,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                                     if (isSafeInlier) {
                                         p.safe_inlier = true;
                                     } else {
+
                                         int i = 0;
                                         int y = 0;
 
@@ -172,10 +174,10 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                                                 .count();
 
                                         do {
-                                            if(count >= k_distinct_list.get(y)){ // Inlier for all i
+                                            if(count >= k_distinct_list.get(y)) { // Inlier for all i
                                                 y += 1;
                                             } else {  // Outlier for all y
-                                                for(int z=y; z < k_size; z++){
+                                                for(int z=y; z < k_size; z++) {
                                                     allQueries[i][z] += 1;
                                                 }
 
@@ -191,9 +193,11 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                             });
 
                     // Report outliers
-                    for (int i=0; i < R_size; i++){
-                        for (int y=0; y < k_size; y++){
-                            OutlierQuery outlierQuery = new OutlierQuery(R_distinct_list.get(i), k_distinct_list.get(y),
+                    for (int i=0; i < R_size; i++) {
+                        for (int y=0; y < k_size; y++) {
+                            OutlierQuery outlierQuery = new OutlierQuery(
+                                    R_distinct_list.get(i),
+                                    k_distinct_list.get(y),
                                     outlierQueries.get(0).window,
                                     outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
@@ -279,13 +283,16 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
         final int R_size = R_distinct_list.size();
         final int W_size = W_distinct_list.size();
         final int S_size = S_distinct_list.size();
+
         final List<Integer> S_report_times = S_distinct_list.stream()
                 .map((it)->it/slide)
                 .sorted()
                 .collect(Collectors.toList());
+
         final int S_max_report = S_report_times.stream()
                 .mapToInt(Integer::intValue)
-                .max().orElse(0);
+                .max()
+                .orElse(0);
 
         return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, SOPState>create(),
                 (stateHolder, window) -> {
@@ -317,7 +324,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
                     List<Integer> output_slide = Lists.make();
                     for (int reportTime: S_report_times) {
-                        if (current.slideCount % reportTime == 0)
+                        if (current.slideCount.get() % reportTime == 0)
                             output_slide.add(reportTime);
                     }
 
@@ -378,7 +385,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                                                 }
 
                                                 w++;
-                                            }while (w<W_size);
+                                            }while (w < W_size);
                                         }
                                     }
                                 }
@@ -408,7 +415,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
                     }
 
-                    current.slideCount += 1;
+                    current.slideCount.incrementAndGet();
 
                     // Remove Old Elements
                     window.getValue().stream()
@@ -465,9 +472,9 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
             List<LSKYProudData> points = Lists.reversing(state.index.values());
 
             // IF the above is incorrect try this:
-            //points = state.index.values().stream()
-            //        .sorted(Comparator.comparingLong(LSKYProudData::getArrival).reversed())
-            //        .collect(Collectors.toList());
+            points = state.index.values().stream()
+                    .sorted(Comparator.comparingLong(LSKYProudData::getArrival).reversed())
+                    .collect(Collectors.toList());
 
             for (LSKYProudData p:points) {
                 if (p.id != el.id) {
@@ -482,15 +489,20 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
         }
 
         public void updatePoint(LSKYProudData point) {
-            point.lsky.replaceAll((i, v) -> point.lsky.get(i).stream()
+            //Remove old points from lSky
+            point.lsky.replaceAll((key, value) -> value.stream()
                                     .filter((it) -> it.second >= window.start)
                                     .collect(Collectors.toList())
             );
 
-            List<Integer> oldSky = point.lsky.values().stream().flatMap(Collection::stream)
+            //Get point lSky
+            List<Integer> oldSky = point.lsky.values().stream()
+                    .flatMap(Collection::stream)
                     .sorted(Comparator.comparingLong(Tuple::getSecond))
                     .map(Tuple::getFirst)
+                    .distinct()
                     .collect(Collectors.toList());
+
             point.lsky.clear();
 
             boolean resultFlag = true;
@@ -517,6 +529,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                 break;
             }
 
+            // Check the old skyband elements
             for (Integer id:oldSky) {
 
                 if (!resultFlag)
@@ -526,7 +539,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                 double distance = Distances.distanceOf(point, p);
 
                 if (distance <= R_max) {
-                    if (!neighbourSkyband(point,p, distance) && distance < R_min) {
+                    if (!neighbourSkyband(point, p, distance) && distance < R_min) {
                         resultFlag = false;
                     }
                 }
@@ -542,16 +555,17 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
             int count = 0;
 
-            for (int i=1;i<normalizedDistance;i++) {
-                count += el.lsky.getOrDefault(i, new ArrayList<>()).size();
+            for (int i=1; i <= normalizedDistance; i++) {
+                count += el.lsky.getOrDefault(i, Lists.make()).size();
             }
 
-            if (count <= K_max-1) {
-                List<Tuple<Integer, Long>> none = el.lsky
-                        .getOrDefault((int) normalizedDistance, new ArrayList<>());
-                none.add(new Tuple<>(neighbour.id, neighbour.arrival));
+            if (count <= K_max - 1) {
+                int distanceKey = (int) Math.floor(normalizedDistance);
 
-                el.lsky.put((int) normalizedDistance,none);
+                List<Tuple<Integer, Long>> value = el.lsky.getOrDefault(distanceKey, new ArrayList<>());
+                value.add(new Tuple<>(neighbour.id, neighbour.arrival));
+
+                el.lsky.put(distanceKey, value);
                 return true;
             }
 

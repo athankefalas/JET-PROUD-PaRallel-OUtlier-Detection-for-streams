@@ -25,6 +25,7 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -240,7 +241,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                             .forEach(pmcsky::deletePoint);
 
                     // If micro-cluster is needed as part of the distributed state remove the following line
-                    current.mcCounter = new AtomicInteger(1);
+                    //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
 
                     // Return results
@@ -464,7 +465,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                             });
 
                     // If micro-cluster is needed as part of the distributed state remove the following line
-                    current.mcCounter = new AtomicInteger(1);
+                    //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
 
                     return Traversers.traverseIterable(outliers);
@@ -511,7 +512,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
             state.mc.entrySet().stream()
                     .map((entry) -> new Tuple<>(entry.getKey(), Distances.distanceOf(el, new EuclideanCoordinateList<>(entry.getValue().center))))
-                    .filter((it)-> it.second <= (3 * R_max) / 2)
+                    .filter((it)-> it.second <= (3.0 * R_max) / 2.0)
                     .forEach((it)->res.put(it.first, it.second));
 
             return res;
@@ -552,16 +553,18 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
             int count = 0;
 
-            for (int i=1;i<normalizedDistance;i++) {
+            for (int i=1;i<=normalizedDistance;i++) {
                 count += el.lsky.getOrDefault(i, new ArrayList<>()).size();
             }
 
-            if (count <= K_max-1) {
-                List<Tuple<Integer, Long>> none = el.lsky
-                        .getOrDefault((int) normalizedDistance, new ArrayList<>());
-                none.add(new Tuple<>(neighbour.id, neighbour.arrival));
+            if (count <= K_max - 1) {
+                int distanceKey = (int) Math.floor(normalizedDistance);
 
-                el.lsky.put((int) normalizedDistance,none);
+                List<Tuple<Integer, Long>> value = el.lsky
+                        .getOrDefault(distanceKey, new ArrayList<>());
+                value.add(new Tuple<>(neighbour.id, neighbour.arrival));
+
+                el.lsky.put(distanceKey,value);
                 return true;
             }
 
@@ -598,7 +601,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     .min(Comparator.comparingDouble(Tuple::getSecond))
                     .orElse(new Tuple<>(0, Double.MAX_VALUE));
 
-            if (closestMC.second < R_min / 2.0) { //Insert element to MC
+            if (closestMC.second <= R_min / 2.0) { //Insert element to MC
                 insertToMicroCluster(el, closestMC.first);
             } else { // Check against PD
                 // List to hold points for new cluster formation
@@ -611,10 +614,12 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                         if (closeMicroClusters.containsKey(p.mc) || p.mc == -1) {
                             double distance = Distances.distanceOf(p, el);
                             if (distance <= R_max) {
-                                if (p.mc == -1 && distance <= R_min / 2)
+                                boolean isInSkyband = neighbourSkyband(el, p, distance);
+
+                                if (p.mc == -1 && distance <= R_min / 2.0)
                                     NC.add(p);
 
-                                if (!neighbourSkyband(el,p,distance) && distance <= R_min)
+                                if (!isInSkyband && distance <= R_min)
                                     break;
                             }
                         }
@@ -711,11 +716,12 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             if (el.mc == -1) { //Delete it from PD
                 state.pd.remove(el.id);
             } else {
-                state.mc.get(el.mc).points.remove(el.id);
+                PMCSkyCluster cluster = state.mc.get(el.mc);
+                cluster.points.removeIf((it)->it == el.id);
 
-                if (state.mc.get(el.mc).points.size() <= K_max) {
-                    state.mc.get(el.mc).points.forEach(p -> {
-                            state.index.get(p).clear(-1);
+                if (cluster.points.size() <= K_max) {
+                    cluster.points.forEach(p -> {
+                        state.index.get(p).clear(-1);
                     });
 
                     state.mc.remove(el.mc);
@@ -842,7 +848,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                 double distance = Distances.distanceOf(el, p);
 
                 if (distance <= R_max) {
-                    if (!neighbourSkyband(el, p, distance) && distance < R_min) {
+                    if (!neighbourSkyband(el, p, distance) && distance <= R_min) {
                         resultFlag = false;
                     }
 
@@ -870,7 +876,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
         public void deleteSmallWindowPoint(McskyProudData el) {
             if (el.mc != -1) { // Delete it from MC
-                state.mc.get(el.mc).points.remove(el.id);
+                state.mc.get(el.mc).points.removeIf((it)->it == el.id);
 
                 if (state.mc.get(el.mc).points.size() <= K_max) {
                     state.mc.get(el.mc).points

@@ -246,6 +246,7 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
 
                         List<Integer> reinsertedElementIds = reinsertElements.stream()
                                 .map((it)->it.id)
+                                .sorted()
                                 .collect(Collectors.toList());
 
                         for (AmcodProudData el:reinsertElements) {
@@ -253,8 +254,7 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
                         }
                     }
 
-                    // If micro-cluster is needed as part of the distributed state remove the following line
-                    current.mcCounter = new AtomicInteger(1);
+                    // Update state
                     stateHolder.put(STATE_KEY, current);
 
                     // Return results
