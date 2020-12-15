@@ -65,6 +65,93 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
             );
         }
 
+        List<Tuple<Double, Double>> partitions = Lists.make();
+
+        for (int partitionIndex = 0; partitionIndex < partitionBoundaries.size(); partitionIndex++) {
+            Double previousBoundary = Lists.getAtOrNull(partitionBoundaries, partitionIndex - 1);
+            double boundary = partitionBoundaries.get(partitionIndex);
+
+            double rangeStart = previousBoundary != null ? previousBoundary : Double.MIN_VALUE;
+
+            Tuple<Double, Double> partition = new Tuple<>(rangeStart, boundary);
+            partitions.add(partition);
+
+            if (partitionIndex == partitionBoundaries.size() - 1) {
+                partition = new Tuple<>(boundary, Double.MAX_VALUE);
+                partitions.add(partition);
+            }
+        }
+
+        double point = dataPoint.value.get(0);
+
+        List<Integer> matchingPartitions = Lists.make();
+        List<Integer> neighbours = Lists.make();
+
+        for (int i=0;i<partitions.size();i++) {
+            Tuple<Double, Double> previous = Lists.getAtOrNull(partitions, i - 1);
+            Tuple<Double, Double> current = partitions.get(i);
+            Tuple<Double, Double> next = Lists.getAtOrNull(partitions, i + 1);
+
+            if (isInside(current, point)) {
+                matchingPartitions.add(i);
+
+                if (previous != null) {
+
+                    for(int j=i-1; j >= 0; j--) {
+                        Tuple<Double, Double> precedingPartition = partitions.get(j);
+
+                        if (isInside(precedingPartition, point - range)) {
+                            neighbours.add(j);
+                        }
+                    }
+                }
+
+                if (next != null) {
+                    for(int j=i+1; j<partitions.size(); j++) {
+                        Tuple<Double, Double> proceedingPartition = partitions.get(j);
+
+                        if (isInside(proceedingPartition, point + range)) {
+                            neighbours.add(j);
+                        }
+                    }
+                }
+            }
+
+        }
+
+        matchingPartitions = matchingPartitions.stream()
+                .sorted()
+                .distinct()
+                .collect(Collectors.toList());
+
+        neighbours = neighbours.stream()
+                .sorted()
+                .distinct()
+                .collect(Collectors.toList());
+
+        return new GridPartitioning.PartitionNeighbourhood(matchingPartitions, neighbours);
+    }
+
+    private boolean isInside(Tuple<Double,Double> partition, double point) {
+        return point >= partition.first && point <= partition.second;
+    }
+
+    // Custom GRID partitioning method from flink Impl - algorithms work kinda ok. BUT, partitions are not logically correct.
+    public GridPartitioning.PartitionNeighbourhood mineOLDNeighbourhoodOf(AnyProudData dataPoint, double range) {
+        int parallelism = 16;
+
+        if (proudContext != null) {
+            parallelism = proudContext.internalConfiguration().getPartitions();
+        }
+
+        List<Double> partitionBoundaries = spatialStock.value().get(1);
+
+        if(partitionBoundaries.size() != parallelism - 1) {
+            throw ExceptionUtils.sneaky(
+                    new IllegalArgumentException("The defined grid boundaries should be equal to the number of partitions - 1.")
+            );
+        }
+
         List<Integer> neighbours = Lists.make();
 
         int partition = -1;
@@ -79,7 +166,6 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
             Double nextBoundary = Lists.getAtOrNull(partitionBoundaries, partitionIndex + 1);
 
             if (previousBoundary != null && nextBoundary != null) {
-
                 if (point > previousBoundary && point <= boundary) {
                     partition = partitionIndex;
 
@@ -123,7 +209,76 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
         if (previousPartition != -1)
             neighbours.add(previousPartition);
 
-        return new GridPartitioning.PartitionNeighbourhood(partition, neighbours);
+        return new GridPartitioning.PartitionNeighbourhood(Lists.of(partition), neighbours);
     }
+
+    // Original Proud GRID partitioning method from flink Impl - does not work with PMCSky
+    public GridPartitioning.PartitionNeighbourhood originalNeighbourhoodOf(AnyProudData dataPoint, double range) {
+        int parallelism = 16;
+
+        if (proudContext != null) {
+            parallelism = proudContext.internalConfiguration().getPartitions();
+        }
+
+        List<Double> points = spatialStock.value().get(1);
+        List<Integer> neighbours = Lists.make();
+
+        List<Double> value = dataPoint.value;
+
+        int i = 0;
+        boolean placedInPartition = false;
+
+        int matchingPartition = -1;
+        int previous = -1;
+        int next = -1;
+
+        do {
+            if (value.get(0) <= points.get(i)) {
+                matchingPartition = i; //belongs to the current partition
+                placedInPartition = true;
+
+                if (i != 0) {
+                    //check if it is near the previous partition
+                    if (value.get(0) <= points.get(i - 1) + range) {
+                        previous = i - 1;
+                    }
+                }
+
+                //check if it is near the next partition
+                if (value.get(0) >= points.get(i) - range) {
+                    next = i + 1;
+                }
+            }
+
+            i += 1;
+        } while (i <= parallelism - 2 && !placedInPartition);
+
+        if (!placedInPartition) {
+            // it belongs to the last partition
+            matchingPartition = parallelism - 1;
+
+            if (value.get(0) <= points.get(parallelism - 2) + range) {
+                previous = parallelism - 2;
+            }
+        }
+
+        int partition = matchingPartition;
+
+        // Add to neighbours if needed
+        if (next != -1)
+            neighbours.add(next);
+
+        // Add to neighbours if needed
+        if (previous != -1)
+            neighbours.add(previous);
+
+        neighbours = neighbours.stream()
+                .sorted()
+                .distinct()
+                .collect(Collectors.toList());
+
+        return new GridPartitioning.PartitionNeighbourhood(Lists.of(partition), neighbours);
+    }
+
 
 }

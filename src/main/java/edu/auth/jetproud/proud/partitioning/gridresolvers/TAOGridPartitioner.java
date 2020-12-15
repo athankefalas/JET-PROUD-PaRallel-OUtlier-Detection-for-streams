@@ -165,6 +165,6 @@ public class TAOGridPartitioner implements GridPartitioning.GridPartitioner
         // List::remove(int index), List::remove(Object value)
         neighbours.removeIf((it)-> it == partition);
 
-        return new GridPartitioning.PartitionNeighbourhood(partition, neighbours);
+        return new GridPartitioning.PartitionNeighbourhood(Lists.of(partition), neighbours);
     }
 }

@@ -6,29 +6,22 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class OutlierMetadata<T extends AnyProudData> implements Serializable
 {
-    private HashMap<Integer, T> outliers;
+    private ConcurrentHashMap<Integer, T> outliers;
 
     public OutlierMetadata() {
-        outliers = new HashMap<>();
+        outliers = new ConcurrentHashMap<>();
     }
 
     public OutlierMetadata(Map<Integer, T> outliers) {
-        this.outliers = new HashMap<>(outliers);
+        this.outliers = new ConcurrentHashMap<>(outliers);
     }
 
     public Map<Integer, T> getOutliers() {
         return outliers;
-    }
-
-    public void addOutliers(Map<Integer, T> outliers) {
-        this.outliers.putAll(outliers);
-    }
-
-    public void setOutliers(HashMap<Integer, T> outliers) {
-        this.outliers = outliers;
     }
 
     public OutlierMetadata<T> copy() {

@@ -37,12 +37,12 @@ public class NaiveProudData extends AnyProudData
     //Function to insert data as a preceding neighbor (max k neighbors)
     public void insert_nn_before(long el, int k) {
         if (k != 0 && nn_before.size() == k) {
-            long tmp = nn_before.stream()
+            long min = nn_before.stream()
                     .min(Long::compareTo)
                     .orElse(0L);
 
-            if (el > tmp) {
-                nn_before.remove(tmp);
+            if (el > min) {
+                nn_before.removeIf((it)->it == min);
                 nn_before.add(el);
             }
 

@@ -9,26 +9,28 @@ import java.util.List;
 
 public class GridPartitioning implements ProudPartitioning
 {
+    private static final boolean USE_DISTINCT_PARTITIONS = true;
+
     public static class PartitionNeighbourhood
     {
-        private int partition;
+        private List<Integer> partitions;
         private List<Integer> neighbours;
 
         public PartitionNeighbourhood() {
-            this(-1, Lists.make());
+            this(Lists.make(), Lists.make());
         }
 
-        public PartitionNeighbourhood(int partition, List<Integer> neighbours) {
-            this.partition = partition;
+        public PartitionNeighbourhood(List<Integer> partitions, List<Integer> neighbours) {
+            this.partitions = partitions;
             this.neighbours = neighbours;
         }
 
-        public int getPartition() {
-            return partition;
+        public List<Integer> getPartitions() {
+            return partitions;
         }
 
-        public void setPartition(int partition) {
-            this.partition = partition;
+        public void setPartition(List<Integer> partitions) {
+            this.partitions = partitions;
         }
 
         public List<Integer> getNeighbours() {
@@ -37,6 +39,14 @@ public class GridPartitioning implements ProudPartitioning
 
         public void setNeighbours(List<Integer> neighbours) {
             this.neighbours = neighbours;
+        }
+
+        @Override
+        public String toString() {
+            return "PartitionNeighbourhood{" +
+                    "partition=" + partitions +
+                    ", neighbours=" + neighbours +
+                    '}';
         }
     }
 
@@ -80,12 +90,17 @@ public class GridPartitioning implements ProudPartitioning
         PartitionNeighbourhood dataNeighbourhood = gridPartitioner.neighbourhoodOf(dataPoint, range);
         List<PartitionedData<AnyProudData>> dataPartitions = Lists.make();
 
-        PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(dataNeighbourhood.partition, dataPoint);
-        dataPartitions.add(partitionedData);
+        for (Integer partition:dataNeighbourhood.getPartitions()) {
+            PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(partition, dataPoint);
+            dataPartitions.add(partitionedData);
+
+            if (USE_DISTINCT_PARTITIONS)
+                break;
+        }
 
         for (Integer neighbouringPartition : dataNeighbourhood.neighbours) {
             AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  1);
-            partitionedData = new PartitionedData<>(neighbouringPartition, dataPointCopy);
+            PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(neighbouringPartition, dataPointCopy);
 
             dataPartitions.add(partitionedData);
         }

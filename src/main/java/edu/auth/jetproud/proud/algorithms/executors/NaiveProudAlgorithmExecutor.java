@@ -121,6 +121,8 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
                             // Create / Update state Map
                             if(current == null) {
+                                current = new OutlierMetadata<>();
+
                                 HashMap<Integer,NaiveProudData> outliersMap = new HashMap<>();
 
                                 for (NaiveProudData el:elements) {
@@ -135,7 +137,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
                                 }
 
-                                current = new OutlierMetadata<>(outliersMap);
+                                current.getOutliers().putAll(outliersMap);
                             } else {
 
                                 // Remove expired elements
@@ -151,7 +153,6 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                     if (oldElement == null) {
                                         current.getOutliers().put(el.id, el);
                                     } else {
-
                                         if (el.arrival < windowEnd - slide) {
                                             oldElement.count_after = el.count_after;
                                             current.getOutliers().put(el.id, oldElement);
@@ -159,7 +160,6 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                             NaiveProudData combinedValue = Naive.combineElements(oldElement, el, k);
                                             current.getOutliers().put(el.id, combinedValue);
                                         }
-
                                     }
 
                                 }
@@ -190,13 +190,11 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
     {
 
         public static List<NaiveProudData> evict(List<NaiveProudData> windowData, long windowStart, long windowEnd, long slide) {
-            List<NaiveProudData> evicted = Lists.copyOf(windowData);
+            List<NaiveProudData> evictedWindowData = Lists.copyOf(windowData);
 
-            evicted.removeIf((it)->{
-                return it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide;
-            });
+            evictedWindowData.removeIf((it)-> it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide);
 
-            return evicted;
+            return evictedWindowData;
         }
 
         long windowStart;

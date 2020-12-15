@@ -1,17 +1,18 @@
 package tests;
 
 import com.hazelcast.jet.Job;
-import com.hazelcast.jet.pipeline.Sinks;
 import common.DatasetOutliersTestSet;
 import common.ResourceFiles;
 import common.UnsafeListStreamOutlierCollector;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.context.Proud;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.partitioning.GridPartitioning;
 import edu.auth.jetproud.proud.partitioning.gridresolvers.DefaultGridPartitioners;
+import edu.auth.jetproud.proud.partitioning.gridresolvers.StockGridPartitioner;
 import edu.auth.jetproud.proud.pipeline.ProudPipeline;
 import edu.auth.jetproud.proud.sink.ProudSink;
 import edu.auth.jetproud.proud.source.ProudSource;
@@ -115,6 +116,63 @@ public class StockTests
         job.cancel();
     }
 
+    @Order(0)
+    @Test
+    @DisplayName("Stock Grid Partitioning")
+    public void stockGridPartitioning() throws Exception { // fixes from: // https://datalab.csd.auth.gr/~gounaris/2019WI.pdf
+        StockGridPartitioner gridPartitioner = new StockGridPartitioner();
+
+        File in = ResourceFiles.fromPath("stk/stk_input_300k.txt");
+        BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(in)));
+
+        String line = "";
+        List<String> lines = Lists.make();
+
+        while(true) {
+            line = br.readLine();
+
+            if (line == null)
+                break;
+
+            lines.add(line);
+        }
+
+        List<AnyProudData> dataSet = lines.stream()
+                .map((ln)->{
+                    String[] parts = ln.split("&");
+
+                    if (parts.length != 2)
+                        return null;
+
+                    Long id = Parser.ofLong().parseString(parts[0]);
+                    Double value = Parser.ofDouble().parseString(parts[1]);
+
+                    if (id == null || value == null)
+                        return null;
+
+                    return new AnyProudData(id.intValue(), Lists.of(value), id, 0);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        double range = 0.45;
+
+        for (AnyProudData data: dataSet) {
+            GridPartitioning.PartitionNeighbourhood old = gridPartitioner.originalNeighbourhoodOf(data, range);
+            GridPartitioning.PartitionNeighbourhood mine = gridPartitioner.neighbourhoodOf(data, range);
+
+            if (old.getPartitions() != mine.getPartitions()) {
+                System.out.println("Incorrect partition.");
+                mine = gridPartitioner.neighbourhoodOf(data, range);
+            }
+
+            if (!old.getNeighbours().equals(mine.getNeighbours())) {
+                System.out.println("Incorrect partition neighbours.");
+                mine = gridPartitioner.neighbourhoodOf(data, range);
+            }
+        }
+    }
+
     //////////// Dataset files exist
 
     @Order(1)
@@ -124,7 +182,7 @@ public class StockTests
         File stockDataset = ResourceFiles.fromPath("stk/stk_input_300k.txt");
         File stockInitDataset = ResourceFiles.fromPath("stk/stk_tree_input.txt");
 
-        // https://datalab.csd.auth.gr/~gounaris/2019WI.pdf
+
 
         Assertions.assertNotNull(stockDataset, "Stocks dataset not found.");
         Assertions.assertNotNull(stockInitDataset, "Tree init file for stocks dataset not found.");

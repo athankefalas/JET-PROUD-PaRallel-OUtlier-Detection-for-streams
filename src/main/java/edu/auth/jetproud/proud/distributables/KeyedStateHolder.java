@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class KeyedStateHolder<K extends Serializable, V extends Serializable> extends HashMap<K, V> implements Serializable
+public class KeyedStateHolder<K extends Serializable, V extends Serializable> extends ConcurrentHashMap<K, V> implements Serializable
 {
 
     public KeyedStateHolder() {
