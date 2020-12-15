@@ -402,5 +402,13 @@ public final class Lists
 
         return range;
     }
+
+    public static <T> T getAtOrNull(List<T> list, int index) {
+        if (index < 0 || index >= list.size())
+            return null;
+
+        return list.get(index);
+    }
+
 }
 

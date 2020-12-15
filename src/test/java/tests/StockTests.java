@@ -16,12 +16,17 @@ import edu.auth.jetproud.proud.pipeline.ProudPipeline;
 import edu.auth.jetproud.proud.sink.ProudSink;
 import edu.auth.jetproud.proud.source.ProudSource;
 import edu.auth.jetproud.utils.Lists;
+import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.utils.Triple;
 import org.junit.jupiter.api.*;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -118,6 +123,8 @@ public class StockTests
     public void datasetExists() throws Exception {
         File stockDataset = ResourceFiles.fromPath("stk/stk_input_300k.txt");
         File stockInitDataset = ResourceFiles.fromPath("stk/stk_tree_input.txt");
+
+        // https://datalab.csd.auth.gr/~gounaris/2019WI.pdf
 
         Assertions.assertNotNull(stockDataset, "Stocks dataset not found.");
         Assertions.assertNotNull(stockInitDataset, "Tree init file for stocks dataset not found.");
