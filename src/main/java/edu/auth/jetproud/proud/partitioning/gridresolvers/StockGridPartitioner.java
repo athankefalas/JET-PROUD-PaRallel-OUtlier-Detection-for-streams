@@ -12,8 +12,21 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
 {
 
     private static final String delimiter = ";";
-    private static final String pointsLiteral1D
+
+    /// A sampled literal string that contains the 15 boundaries for the grid
+    private static final String pointsLiteral1DSample
             = "87.231;94.222;96.5;97.633;98.5;99.25;99.897;100.37;101.16;102.13;103.18;104.25;105.25;106.65;109.75";
+
+    /// A literal string that contains the 15 boundaries for the grid
+    ///     extracted from the entire test dataset. This is used for testing
+    //      an algorithm's sensitivity to partitioning errors.
+    private static final String pointsLiteral1DFull =
+            "17.93;25.8;33.67;41.54;49.41;57.27;65.14;73.01;80.88;88.75;96.62;104.49;112.35;120.22;128.09";
+
+
+    /// Static definition of partitions
+
+    private static final String pointsLiteral1D = pointsLiteral1DSample;
 
     private static final Lazy<HashMap<Integer, ArrayList<Double>>> spatialStock = new Lazy<>(()->{
         HashMap<Integer, ArrayList<Double>> value = new HashMap<>();
@@ -60,7 +73,7 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
         return new ArrayList<>(partitions);
     });
 
-    // Implementation
+    /// Partitioner Implementation
 
     private ProudContext proudContext;
 
@@ -153,7 +166,7 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
         return point >= partition.first && point <= partition.second;
     }
 
-    // Custom GRID partitioning method from flink Impl - algorithms work kinda ok. BUT, partitions are not logically correct.
+    // Custom GRID partitioning - algorithms work kinda. BUT, partitioning is not correct !!!
     public GridPartitioning.PartitionNeighbourhood mineOLDNeighbourhoodOf(AnyProudData dataPoint, double range) {
         int parallelism = 16;
 
@@ -229,7 +242,7 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
         return new GridPartitioning.PartitionNeighbourhood(Lists.of(partition), neighbours);
     }
 
-    // Original Proud GRID partitioning method from flink Impl - does not work with PMCSky
+    // Original Proud GRID partitioning method from flink Impl - does not work with PMCSky & SOP
     public GridPartitioning.PartitionNeighbourhood originalNeighbourhoodOf(AnyProudData dataPoint, double range) {
         int parallelism = 16;
 

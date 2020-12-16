@@ -25,6 +25,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -154,6 +155,34 @@ public class StockTests
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
+        double minV = dataSet.stream()
+                .map((it)->it.value.get(0))
+                .mapToDouble((it)->it)
+                .min()
+                .orElse(Double.MIN_VALUE);
+
+        double maxV = dataSet.stream()
+                .map((it)->it.value.get(0))
+                .mapToDouble((it)->it)
+                .max()
+                .orElse(Double.MAX_VALUE);
+
+        double valueRange = maxV - minV;
+        double partSize = valueRange / 16.0;
+
+        double current = minV;
+        List<Double> bounds = Lists.make();
+
+        for (int n=1;n<16;n++) {
+            current += partSize;
+            bounds.add(current);
+        }
+
+        final DecimalFormat format = new DecimalFormat("#.##");
+        String equalPartitionBoundsString = bounds.stream()
+                .map((it)->format.format(it).replace(",", "."))
+                .collect(Collectors.joining(";"));
 
         double range = 0.45;
 
