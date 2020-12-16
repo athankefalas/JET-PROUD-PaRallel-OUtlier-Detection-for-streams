@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYProudData>
@@ -33,7 +34,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
     static class PSODState implements Serializable
     {
-        public HashMap<Integer, LSKYProudData> index;
+        public ConcurrentHashMap<Integer, LSKYProudData> index;
         public long slideCount;
 
         public PSODState(HashMap<Integer, LSKYProudData> index) {
@@ -42,7 +43,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
         public PSODState(HashMap<Integer, LSKYProudData> index, long slideCount) {
             this.slideCount = slideCount;
-            this.index = index;
+            this.index = new ConcurrentHashMap<>(index);
         }
     }
 

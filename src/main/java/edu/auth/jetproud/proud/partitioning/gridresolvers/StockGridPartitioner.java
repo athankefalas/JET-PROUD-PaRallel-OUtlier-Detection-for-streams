@@ -38,6 +38,30 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
         return value;
     });
 
+    private static final Lazy<ArrayList<Tuple<Double, Double>>> partitionRanges = new Lazy<>(()->{
+        List<Double> partitionBoundaries = spatialStock.value().get(1);
+        List<Tuple<Double, Double>> partitions = Lists.make();
+
+        for (int partitionIndex = 0; partitionIndex < partitionBoundaries.size(); partitionIndex++) {
+            Double previousBoundary = Lists.getAtOrNull(partitionBoundaries, partitionIndex - 1);
+            double boundary = partitionBoundaries.get(partitionIndex);
+
+            double rangeStart = previousBoundary != null ? previousBoundary : Double.MIN_VALUE;
+
+            Tuple<Double, Double> partition = new Tuple<>(rangeStart, boundary);
+            partitions.add(partition);
+
+            if (partitionIndex == partitionBoundaries.size() - 1) {
+                partition = new Tuple<>(boundary, Double.MAX_VALUE);
+                partitions.add(partition);
+            }
+        }
+
+        return new ArrayList<>(partitions);
+    });
+
+    // Implementation
+
     private ProudContext proudContext;
 
     public StockGridPartitioner(){
@@ -65,24 +89,9 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
             );
         }
 
-        List<Tuple<Double, Double>> partitions = Lists.make();
-
-        for (int partitionIndex = 0; partitionIndex < partitionBoundaries.size(); partitionIndex++) {
-            Double previousBoundary = Lists.getAtOrNull(partitionBoundaries, partitionIndex - 1);
-            double boundary = partitionBoundaries.get(partitionIndex);
-
-            double rangeStart = previousBoundary != null ? previousBoundary : Double.MIN_VALUE;
-
-            Tuple<Double, Double> partition = new Tuple<>(rangeStart, boundary);
-            partitions.add(partition);
-
-            if (partitionIndex == partitionBoundaries.size() - 1) {
-                partition = new Tuple<>(boundary, Double.MAX_VALUE);
-                partitions.add(partition);
-            }
-        }
-
         double point = dataPoint.value.get(0);
+
+        List<Tuple<Double, Double>> partitions = partitionRanges.value();
 
         List<Integer> matchingPartitions = Lists.make();
         List<Integer> neighbours = Lists.make();
@@ -101,7 +110,11 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
                         Tuple<Double, Double> precedingPartition = partitions.get(j);
 
                         if (isInside(precedingPartition, point - range)) {
-                            neighbours.add(j);
+                            final int precedingPartitionIndex = j;
+                            if (matchingPartitions.stream().noneMatch((p)->p == precedingPartitionIndex))
+                                neighbours.add(j);
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -111,7 +124,11 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
                         Tuple<Double, Double> proceedingPartition = partitions.get(j);
 
                         if (isInside(proceedingPartition, point + range)) {
-                            neighbours.add(j);
+                            final int proceedingPartitionIndex = j;
+                            if (matchingPartitions.stream().noneMatch((p)->p == proceedingPartitionIndex))
+                                neighbours.add(j);
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -148,7 +165,7 @@ public class StockGridPartitioner implements GridPartitioning.GridPartitioner
 
         if(partitionBoundaries.size() != parallelism - 1) {
             throw ExceptionUtils.sneaky(
-                    new IllegalArgumentException("The defined grid boundaries should be equal to the number of partitions - 1.")
+                    new IllegalArgumentException("The defined grid boundaries should be equal to the number of partitions - 1 ("+(parallelism-1)+").")
             );
         }
 

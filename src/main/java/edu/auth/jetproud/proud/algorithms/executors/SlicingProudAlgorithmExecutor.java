@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<SlicingProudData>
@@ -36,15 +37,16 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
     public static final Long OUTLIERS_TRIGGER = Long.MIN_VALUE;
 
     public static class SlicingState implements Serializable {
-        public HashMap<Long, MTree<SlicingProudData>> trees;
-        public HashMap<Long, HashSet<Integer>> triggers;
+        public ConcurrentHashMap<Long, MTree<SlicingProudData>> trees;
+        public ConcurrentHashMap<Long, HashSet<Integer>> triggers;
 
         public SlicingState() {
+            this(new HashMap<>(), new HashMap<>());
         }
 
         public SlicingState(HashMap<Long, MTree<SlicingProudData>> trees, HashMap<Long, HashSet<Integer>> triggers) {
-            this.trees = trees;
-            this.triggers = triggers;
+            this.trees = new ConcurrentHashMap<>(trees);
+            this.triggers = new ConcurrentHashMap<>(triggers);
         }
     }
 

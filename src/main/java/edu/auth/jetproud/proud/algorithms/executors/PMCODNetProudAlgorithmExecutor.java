@@ -22,6 +22,8 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -30,33 +32,32 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
 
     public static class PMCODNetMicroCluster implements Serializable
     {
-        public LinkedList<Double> center;
-        public LinkedList<McodProudData> points;
+        public CopyOnWriteArrayList<Double> center;
+        public CopyOnWriteArrayList<McodProudData> points;
 
         public PMCODNetMicroCluster() {
-            this.points = new LinkedList<>();
-            this.center = new LinkedList<>();
+            this(Lists.make(), Lists.make());
         }
 
         public PMCODNetMicroCluster(List<Double> center, List<McodProudData> points) {
-            this.center = new LinkedList<>(center);
-            this.points = new LinkedList<>(points);
+            this.center = new CopyOnWriteArrayList<>(center);
+            this.points = new CopyOnWriteArrayList<>(points);
         }
     }
 
     public static class PMCODNetState implements Serializable
     {
         public AtomicInteger mcCounter = new AtomicInteger(1);
-        public HashMap<Integer, McodProudData> pd;
-        public HashMap<Integer, PMCODNetMicroCluster> mc;
+        public ConcurrentHashMap<Integer, McodProudData> pd;
+        public ConcurrentHashMap<Integer, PMCODNetMicroCluster> mc;
 
         public PMCODNetState() {
             this(new HashMap<>(), new HashMap<>());
         }
 
         public PMCODNetState(HashMap<Integer, McodProudData> pd, HashMap<Integer, PMCODNetMicroCluster> mc) {
-            this.pd = pd;
-            this.mc = mc;
+            this.pd = new ConcurrentHashMap<>(pd);
+            this.mc = new ConcurrentHashMap<>(mc);
         }
     }
 

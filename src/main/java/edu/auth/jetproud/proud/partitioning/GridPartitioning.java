@@ -9,7 +9,7 @@ import java.util.List;
 
 public class GridPartitioning implements ProudPartitioning
 {
-    private static final boolean USE_DISTINCT_PARTITIONS = true;
+    private static final boolean USE_ONLY_PRIMARY_PARTITION = true;
 
     public static class PartitionNeighbourhood
     {
@@ -90,12 +90,30 @@ public class GridPartitioning implements ProudPartitioning
         PartitionNeighbourhood dataNeighbourhood = gridPartitioner.neighbourhoodOf(dataPoint, range);
         List<PartitionedData<AnyProudData>> dataPartitions = Lists.make();
 
-        for (Integer partition:dataNeighbourhood.getPartitions()) {
-            PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(partition, dataPoint);
+        if (!dataNeighbourhood.getPartitions().isEmpty()) {
+            int primaryPartition = dataNeighbourhood.getPartitions().get(0);
+            PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(primaryPartition, dataPoint);
             dataPartitions.add(partitionedData);
 
-            if (USE_DISTINCT_PARTITIONS)
-                break;
+            if (dataNeighbourhood.getPartitions().size() > 1) {
+
+                for (int i=1; i<dataNeighbourhood.getPartitions().size(); i++) {
+                    final int partition = dataNeighbourhood.getPartitions().get(i);
+
+                    if (!USE_ONLY_PRIMARY_PARTITION) {
+                        partitionedData = new PartitionedData<>(partition, dataPoint);
+                    } else {
+                        if (dataNeighbourhood.getNeighbours().stream().anyMatch((it)->it == partition))
+                            continue;
+
+                        AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  1);
+                        partitionedData = new PartitionedData<>(partition, dataPointCopy);
+                    }
+
+                    dataPartitions.add(partitionedData);
+                }
+
+            }
         }
 
         for (Integer neighbouringPartition : dataNeighbourhood.neighbours) {

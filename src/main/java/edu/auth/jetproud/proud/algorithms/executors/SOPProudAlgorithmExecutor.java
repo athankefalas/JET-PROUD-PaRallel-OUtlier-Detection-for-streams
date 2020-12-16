@@ -24,6 +24,7 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -32,7 +33,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
     static class SOPState implements Serializable
     {
-        public HashMap<Integer, LSKYProudData> index;
+        public ConcurrentHashMap<Integer, LSKYProudData> index;
         public AtomicLong slideCount;
 
         public SOPState(HashMap<Integer, LSKYProudData> index) {
@@ -41,7 +42,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
         public SOPState(HashMap<Integer, LSKYProudData> index, long slideCount) {
             this.slideCount = new AtomicLong(slideCount);
-            this.index = index;
+            this.index = new ConcurrentHashMap<>(index);
         }
     }
 
@@ -477,12 +478,13 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                     .collect(Collectors.toList());
 
             for (LSKYProudData p:points) {
-                if (p.id != el.id) {
-                    double distance = Distances.distanceOf(p, el);
-                    if (distance <= R_max) {
-                        if (!neighbourSkyband(el,p,distance) && distance <= R_min) {
-                            break;
-                        }
+                if (p.id == el.id)
+                    continue;
+
+                double distance = Distances.distanceOf(p, el);
+                if (distance <= R_max) {
+                    if (!neighbourSkyband(el, p, distance) && distance <= R_min) {
+                        break;
                     }
                 }
             }

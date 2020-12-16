@@ -158,16 +158,11 @@ public class StockTests
         double range = 0.45;
 
         for (AnyProudData data: dataSet) {
-            GridPartitioning.PartitionNeighbourhood old = gridPartitioner.originalNeighbourhoodOf(data, range);
+            GridPartitioning.PartitionNeighbourhood old = gridPartitioner.mineOLDNeighbourhoodOf(data, range);
             GridPartitioning.PartitionNeighbourhood mine = gridPartitioner.neighbourhoodOf(data, range);
 
-            if (old.getPartitions() != mine.getPartitions()) {
-                System.out.println("Incorrect partition.");
-                mine = gridPartitioner.neighbourhoodOf(data, range);
-            }
-
-            if (!old.getNeighbours().equals(mine.getNeighbours())) {
-                System.out.println("Incorrect partition neighbours.");
+            if (!old.toString().equals(mine.toString())) {
+                System.out.println("Incorrect partitions.");
                 mine = gridPartitioner.neighbourhoodOf(data, range);
             }
         }
@@ -181,8 +176,6 @@ public class StockTests
     public void datasetExists() throws Exception {
         File stockDataset = ResourceFiles.fromPath("stk/stk_input_300k.txt");
         File stockInitDataset = ResourceFiles.fromPath("stk/stk_tree_input.txt");
-
-
 
         Assertions.assertNotNull(stockDataset, "Stocks dataset not found.");
         Assertions.assertNotNull(stockInitDataset, "Tree init file for stocks dataset not found.");

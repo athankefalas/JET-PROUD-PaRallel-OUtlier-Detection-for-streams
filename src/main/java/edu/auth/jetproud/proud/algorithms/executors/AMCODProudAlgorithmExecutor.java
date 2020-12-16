@@ -24,6 +24,8 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -32,32 +34,32 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
 
     public static class AMCODMicroCluster implements Serializable
     {
-        public LinkedList<Double> center;
-        public LinkedList<AmcodProudData> points;
+        public CopyOnWriteArrayList<Double> center;
+        public CopyOnWriteArrayList<AmcodProudData> points;
 
         public AMCODMicroCluster() {
             this(new LinkedList<>(),new LinkedList<>());
         }
 
         public AMCODMicroCluster(List<Double> center, List<AmcodProudData> points) {
-            this.center = new LinkedList<>(center);
-            this.points = new LinkedList<>(points);
+            this.center = new CopyOnWriteArrayList<>(center);
+            this.points = new CopyOnWriteArrayList<>(points);
         }
     }
 
     public static class AMCODState implements Serializable
     {
         public AtomicInteger mcCounter = new AtomicInteger(1);
-        public HashMap<Integer, AmcodProudData> pd;
-        public HashMap<Integer, AMCODMicroCluster> mc;
+        public ConcurrentHashMap<Integer, AmcodProudData> pd;
+        public ConcurrentHashMap<Integer, AMCODMicroCluster> mc;
 
         public AMCODState() {
             this(new HashMap<>(), new HashMap<>());
         }
 
         public AMCODState(HashMap<Integer, AmcodProudData> pd, HashMap<Integer, AMCODMicroCluster> mc) {
-            this.pd = pd;
-            this.mc = mc;
+            this.pd = new ConcurrentHashMap<>(pd);
+            this.mc = new ConcurrentHashMap<>(mc);
         }
     }
 

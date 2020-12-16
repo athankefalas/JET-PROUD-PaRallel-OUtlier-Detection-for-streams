@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
@@ -38,14 +39,14 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
 
     public static class AdvancedExtendedState implements Serializable {
         public MTree<AdvancedProudData> mTree;
-        public HashMap<Integer, AdvancedProudData> map;
+        public ConcurrentHashMap<Integer, AdvancedProudData> map;
 
         public AdvancedExtendedState() {
         }
 
         public AdvancedExtendedState(MTree<AdvancedProudData> mTree, HashMap<Integer, AdvancedProudData> map) {
             this.mTree = mTree;
-            this.map = map;
+            this.map = new ConcurrentHashMap<>(map);
         }
     }
 

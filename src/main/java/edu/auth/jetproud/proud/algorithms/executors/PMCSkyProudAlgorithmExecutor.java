@@ -25,7 +25,10 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -35,9 +38,9 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
     public static class PMCSkyState implements Serializable
     {
         public AtomicInteger mcCounter = new AtomicInteger(1);
-        public HashMap<Integer, McskyProudData> index;
-        public HashMap<Integer, PMCSkyCluster> mc;
-        public HashSet<Integer> pd;
+        public ConcurrentHashMap<Integer, McskyProudData> index;
+        public ConcurrentHashMap<Integer, PMCSkyCluster> mc;
+        public CopyOnWriteArraySet<Integer> pd;
 
         public long slideCount;
 
@@ -46,31 +49,31 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         }
 
         public PMCSkyState(HashMap<Integer, McskyProudData> index, HashMap<Integer, PMCSkyCluster> mc, HashSet<Integer> pd) {
-            this.index = index;
-            this.mc = mc;
-            this.pd = pd;
+            this.index = new ConcurrentHashMap<>(index);
+            this.mc = new ConcurrentHashMap<>(mc);
+            this.pd = new CopyOnWriteArraySet<>(pd);
         }
 
         public PMCSkyState(HashMap<Integer, McskyProudData> index, HashMap<Integer, PMCSkyCluster> mc, HashSet<Integer> pd, long slideCount) {
-            this.index = index;
-            this.mc = mc;
-            this.pd = pd;
+            this.index = new ConcurrentHashMap<>(index);
+            this.mc = new ConcurrentHashMap<>(mc);
+            this.pd = new CopyOnWriteArraySet<>(pd);
             this.slideCount = slideCount;
         }
     }
 
     public static class PMCSkyCluster implements Serializable
     {
-        public LinkedList<Double> center;
-        public LinkedList<Integer> points;
+        public CopyOnWriteArrayList<Double> center;
+        public CopyOnWriteArrayList<Integer> points;
 
         public PMCSkyCluster(List<Double> center) {
             this(center, Lists.make());
         }
 
         public PMCSkyCluster(List<Double> center, List<Integer> points) {
-            this.center = new LinkedList<>(center);
-            this.points = new LinkedList<>(points);
+            this.center = new CopyOnWriteArrayList<>(center);
+            this.points = new CopyOnWriteArrayList<>(points);
         }
     }
 
@@ -540,6 +543,9 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     .collect(Collectors.toList());
 
             PMCSkyCluster newMC = new PMCSkyCluster(el.value, NCIds);
+
+            assert !state.mc.containsKey(mcCounter);
+
             state.mc.put(mcCounter, newMC);
 
             mcCounter += 1;
@@ -553,7 +559,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
             int count = 0;
 
-            for (int i=1;i<=normalizedDistance;i++) {
+            for (int i=1; i <= normalizedDistance; i++) {
                 count += el.lsky.getOrDefault(i, new ArrayList<>()).size();
             }
 
@@ -595,7 +601,10 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
         @Override
         public void insertPoint(McskyProudData el) {
+            // Find close MCs
             Map<Integer, Double> closeMicroClusters = findCloseMicroClusters(el);
+
+            // Find closest MC
             Tuple<Integer, Double> closestMC = closeMicroClusters.entrySet().stream()
                     .map(Tuple::fromEntry)
                     .min(Comparator.comparingDouble(Tuple::getSecond))
@@ -610,18 +619,21 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
                 // Find the points so far from latest to earliest
                 for(McskyProudData p:items) {
-                    if (p.id != el.id) {
-                        if (closeMicroClusters.containsKey(p.mc) || p.mc == -1) {
-                            double distance = Distances.distanceOf(p, el);
-                            if (distance <= R_max) {
-                                boolean isInSkyband = neighbourSkyband(el, p, distance);
+                    if (p.id == el.id) {
+                        continue;
+                    }
 
-                                if (p.mc == -1 && distance <= R_min / 2.0)
-                                    NC.add(p);
+                    if (closeMicroClusters.containsKey(p.mc) || p.mc == -1) {
+                        double distance = Distances.distanceOf(el, p);
 
-                                if (!isInSkyband && distance <= R_min)
-                                    break;
-                            }
+                        if (distance <= R_max) {
+                            boolean isInSkyband = neighbourSkyband(el, p, distance);
+
+                            if (p.mc == -1 && distance <= R_min / 2.0)
+                                NC.add(p);
+
+                            if (!isInSkyband && distance <= R_min)
+                                break;
                         }
                     }
                 }
@@ -652,6 +664,8 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     .sorted(Comparator.comparingLong(Tuple::getSecond))
                     .map(Tuple::getFirst)
                     .collect(Collectors.toList());
+
+            // Clear element lSky
             el.lsky.clear();
 
             // Variable to stop skyband loop
@@ -699,7 +713,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                         resultFlag = false;
                     }
 
-                    if (state.pd.contains(p.id) && distance <= R_min / 2)
+                    if (state.pd.contains(p.id) && distance <= R_min / 2.0)
                         NC.add(p);
                 }
             }
@@ -805,6 +819,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     .sorted(Comparator.comparingLong(Tuple::getSecond))
                     .map(Tuple::getFirst)
                     .collect(Collectors.toList());
+
             el.lsky.clear();
 
             // Variable to stop skyband loop
@@ -852,7 +867,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                         resultFlag = false;
                     }
 
-                    if (p.arrival >= window.end - W_min && state.pd.contains(p.id) && distance <= R_min / 2)
+                    if (p.arrival >= window.end - W_min && state.pd.contains(p.id) && distance <= R_min / 2.0)
                         NC.add(p);
                 }
             }

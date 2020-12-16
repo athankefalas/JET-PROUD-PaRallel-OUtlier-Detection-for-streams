@@ -28,6 +28,7 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
@@ -36,14 +37,14 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
     public static class AdvancedState implements Serializable
     {
         public MTree<AdvancedProudData> mTree;
-        public HashMap<Integer, AdvancedProudData> map;
+        public ConcurrentHashMap<Integer, AdvancedProudData> map;
 
         public AdvancedState() {
         }
 
         public AdvancedState(MTree<AdvancedProudData> mTree, HashMap<Integer, AdvancedProudData> map) {
             this.mTree = mTree;
-            this.map = map;
+            this.map = new ConcurrentHashMap<>(map);
         }
     }
 
