@@ -92,7 +92,8 @@ public class GridPartitioning implements ProudPartitioning
 
         if (!dataNeighbourhood.getPartitions().isEmpty()) {
             int primaryPartition = dataNeighbourhood.getPartitions().get(0);
-            PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(primaryPartition, dataPoint);
+            AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  0);
+            PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(primaryPartition, dataPointCopy);
             dataPartitions.add(partitionedData);
 
             if (dataNeighbourhood.getPartitions().size() > 1) {
@@ -101,12 +102,13 @@ public class GridPartitioning implements ProudPartitioning
                     final int partition = dataNeighbourhood.getPartitions().get(i);
 
                     if (!USE_ONLY_PRIMARY_PARTITION) {
-                        partitionedData = new PartitionedData<>(partition, dataPoint);
+                        dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  0);
+                        partitionedData = new PartitionedData<>(partition, dataPointCopy);
                     } else {
                         if (dataNeighbourhood.getNeighbours().stream().anyMatch((it)->it == partition))
                             continue;
 
-                        AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  1);
+                        dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  1);
                         partitionedData = new PartitionedData<>(partition, dataPointCopy);
                     }
 

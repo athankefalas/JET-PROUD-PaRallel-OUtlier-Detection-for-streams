@@ -170,14 +170,15 @@ public class TreePartitioning implements ProudPartitioning
         partitions.addAll(negativePartitions);
 
         // Create Data Partitions
-        PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(0, dataPoint);
+        AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  0);
+        PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(positivePartition, dataPointCopy);
         dataPartitions.add(partitionedData);
 
         if (partitions.size() > 1) {
             for (int i=1; i < partitions.size(); i++) {
                 int partitionNeighbour = partitions.get(i);
 
-                AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  1);
+                dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  1);
                 partitionedData = new PartitionedData<>(partitionNeighbour, dataPointCopy);
 
                 dataPartitions.add(partitionedData);

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYProudData>
@@ -35,14 +36,14 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
     static class PSODState implements Serializable
     {
         public ConcurrentHashMap<Integer, LSKYProudData> index;
-        public long slideCount;
+        public AtomicLong slideCount;
 
         public PSODState(HashMap<Integer, LSKYProudData> index) {
             this(index, 1);
         }
 
         public PSODState(HashMap<Integer, LSKYProudData> index, long slideCount) {
-            this.slideCount = slideCount;
+            this.slideCount = new AtomicLong(slideCount);
             this.index = new ConcurrentHashMap<>(index);
         }
     }
@@ -192,7 +193,9 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                     // Report outliers
                     for (int i=0; i < R_size; i++){
                         for (int y=0; y < k_size; y++){
-                            OutlierQuery outlierQuery = new OutlierQuery(R_distinct_list.get(i), k_distinct_list.get(y),
+                            OutlierQuery outlierQuery = new OutlierQuery(
+                                    R_distinct_list.get(i),
+                                    k_distinct_list.get(y),
                                     outlierQueries.get(0).window,
                                     outlierQueries.get(0).slide
                             ).withOutlierCount(allQueries[i][y]);
@@ -207,7 +210,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .forEach(psod::deletePoint);
 
 
-                    stateHolder.put(STATE_KEY, current);
+                    //stateHolder.put(STATE_KEY, current);
 
                     // Return results
                     return Traversers.traverseIterable(outliers);
@@ -279,11 +282,11 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
         final int W_size = W_distinct_list.size();
         final int S_size = S_distinct_list.size();
         final List<Integer> S_distinct_downgraded = S_distinct_list.stream()
-                .map((it)->it/slide)
+                .map((it)-> it/slide)
                 .distinct()
                 .collect(Collectors.toList());
-        int product = S_distinct_downgraded.stream().reduce(1,(a,b)->a*b);
 
+        int product = S_distinct_downgraded.stream().reduce(1,(a,b)->a*b);
         final List<Long> S_var = Lists.range(1, product + 1).stream()
                 .filter((i)-> {
                     return S_distinct_downgraded.stream()
@@ -322,6 +325,8 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                         stateHolder.put(STATE_KEY, current);
                     }
 
+                    final long slideCount = current.slideCount.get();
+
                     int[][][] allQueries = ArrayUtils.multidimensionalWith(0, R_size, k_size, W_size);
                     final PSOD psod = new PSOD(current, R_distinct_list, R_max, k_max);
 
@@ -341,7 +346,6 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                     }
 
                     // Update elements
-                    final PSODState finalState = current;
 
                     window.getValue().stream()
                             .map(Tuple::getSecond)
@@ -356,7 +360,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                                     p.safe_inlier = true;
                                 } else {
 
-                                    if (S_var.contains(finalState.slideCount)) {
+                                    if (S_var.contains(slideCount)) {
                                         int w = 0;
 
                                         do {
@@ -388,17 +392,16 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                                             }
 
                                             w++;
-                                        }while (w<W_size);
+                                        }while (w < W_size);
                                     }
                                 }
                             });
 
                     // Report outliers
-                    if (S_var.contains(current.slideCount)) {
-                        final long finalSlideCount = current.slideCount;
+                    if (S_var.contains(slideCount)) {
                         List<Integer> reportingSlides = S_distinct_downgraded.stream()
-                                .filter((it)-> finalSlideCount % it == 0)
-                                .map((it)->it*slide)
+                                .filter((it)-> slideCount % it == 0)
+                                .map((it)->it * slide)
                                 .collect(Collectors.toList());
 
                         for (int i=0; i < R_size; i++){
@@ -419,7 +422,10 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
                     }
 
-                    current.slideCount += 1;
+                    current.slideCount.set(slideCount + 1);
+
+                    if(current.slideCount.get() > S_var_max)
+                        current.slideCount.set(1);
 
                     // Remove Old Elements
                     window.getValue().stream()
@@ -427,7 +433,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .filter((it)-> it.arrival < windowStart + slide)
                             .forEach(psod::deletePoint);
 
-                    stateHolder.put(STATE_KEY, current);
+                    //stateHolder.put(STATE_KEY, current);
 
                     // Return results
                     return Traversers.traverseIterable(outliers);
@@ -452,20 +458,18 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
         public void insertPoint(LSKYProudData el) {
             // Get the points so far from latest to earliest
-            //  - This works because the elements where added in reverse
-            List<LSKYProudData> points = Lists.reversing(state.index.values());
-
-            // IF the above is incorrect try this:
-            //points = state.index.values().stream()
-            //        .sorted(Comparator.comparingLong(LSKYProudData::getArrival).reversed())
-            //        .collect(Collectors.toList());
+            List<LSKYProudData> points = state.index.values().stream()
+                    .sorted(Comparator.comparingLong(LSKYProudData::getArrival).reversed())
+                    .collect(Collectors.toList());
 
             for (LSKYProudData p:points) {
-                if (p.id != el.id) {
-                    double distance = Distances.distanceOf(p, el);
-                    if (distance <= R_max) {
-                        addNeighbour(el, p, distance);
-                    }
+                if (p.id == el.id)
+                    continue;
+
+                double distance = Distances.distanceOf(el, p);
+
+                if (distance <= R_max) {
+                    addNeighbour(el, p, distance);
                 }
             }
 
@@ -477,16 +481,15 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
         }
 
         public void addNeighbour(LSKYProudData el, LSKYProudData neigh, double distance) {
-            double norm_dist = normalizeDistance(distance);
-            int dist_key = (int) norm_dist;
+            int norm_dist = normalizeDistance(distance);
 
-            if (el.flag == 0 && el.lsky.getOrDefault(dist_key, Lists.make()).size() < K_max) {
-                List<Tuple<Integer, Long>> value = el.lsky.getOrDefault(dist_key, Lists.make());
+            if (el.flag == 0 && el.lsky.getOrDefault(norm_dist, Lists.make()).size() < K_max) {
+                List<Tuple<Integer, Long>> value = el.lsky.getOrDefault(norm_dist, Lists.make());
                 value.add(new Tuple<>(neigh.id, neigh.arrival));
 
-                el.lsky.put(dist_key, value);
-            }else if(el.flag == 0 && el.lsky.getOrDefault(dist_key, Lists.make()).size() == K_max){
-                Tuple<Integer, Long> min = el.lsky.get(dist_key).stream()
+                el.lsky.put(norm_dist, value);
+            }else if(el.flag == 0 && el.lsky.getOrDefault(norm_dist, Lists.make()).size() == K_max){
+                Tuple<Integer, Long> min = el.lsky.get(norm_dist).stream()
                         .min(Comparator.comparingLong(Tuple::getSecond))
                         .orElse(new Tuple<>(-1, 0L));
 
@@ -494,23 +497,23 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                 long minArrival = min.second;
 
                 if(neigh.arrival > minArrival) {
-                    List<Tuple<Integer, Long>> value = el.lsky.getOrDefault(dist_key, Lists.make()).stream()
+                    List<Tuple<Integer, Long>> value = el.lsky.getOrDefault(norm_dist, Lists.make()).stream()
                             .filter((it)->it.first != minId)
                             .collect(Collectors.toList());
                     value.add(new Tuple<>(neigh.id, neigh.arrival));
 
-                    el.lsky.put(dist_key, value);
+                    el.lsky.put(norm_dist, value);
                 }
             }
 
             if (!neigh.safe_inlier) {
-                if (neigh.flag == 0 && neigh.lsky.getOrDefault(dist_key, Lists.make()).size() < K_max) {
-                    List<Tuple<Integer, Long>> value = neigh.lsky.getOrDefault(dist_key, Lists.make());
+                if (neigh.flag == 0 && neigh.lsky.getOrDefault(norm_dist, Lists.make()).size() < K_max) {
+                    List<Tuple<Integer, Long>> value = neigh.lsky.getOrDefault(norm_dist, Lists.make());
                     value.add(new Tuple<>(el.id, el.arrival));
 
-                    neigh.lsky.put(dist_key, value);
-                }else if(el.flag == 0 && el.lsky.getOrDefault(dist_key, Lists.make()).size() == K_max){
-                    Tuple<Integer, Long> min = neigh.lsky.getOrDefault(dist_key, Lists.make()).stream()
+                    neigh.lsky.put(norm_dist, value);
+                }else if(neigh.flag == 0 && neigh.lsky.getOrDefault(norm_dist, Lists.make()).size() == K_max){
+                    Tuple<Integer, Long> min = neigh.lsky.getOrDefault(norm_dist, Lists.make()).stream()
                             .min(Comparator.comparingLong(Tuple::getSecond))
                             .orElse(new Tuple<>(-1, 0L));
 
@@ -518,19 +521,19 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                     long minArrival = min.second;
 
                     if(el.arrival > minArrival) {
-                        List<Tuple<Integer, Long>> value = neigh.lsky.getOrDefault(dist_key, Lists.make()).stream()
+                        List<Tuple<Integer, Long>> value = neigh.lsky.getOrDefault(norm_dist, Lists.make()).stream()
                                 .filter((it)->it.first != minId)
                                 .collect(Collectors.toList());
                         value.add(new Tuple<>(el.id, el.arrival));
 
-                        neigh.lsky.put(dist_key, value);
+                        neigh.lsky.put(norm_dist, value);
                     }
                 }
             }
         }
 
-        public double normalizeDistance(double distance) {
-            double normalizedDistance = -1.0;
+        public int normalizeDistance(double distance) {
+            int normalizedDistance = -1;
             int i = 0;
 
             do {
@@ -538,7 +541,7 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                     normalizedDistance = i;
 
                 i += 1;
-            } while (i < R_distinct_list.size() && normalizedDistance == -1.0);
+            } while (i < R_distinct_list.size() && normalizedDistance == -1);
 
             return normalizedDistance;
         }

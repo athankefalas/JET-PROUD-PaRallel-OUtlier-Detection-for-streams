@@ -31,7 +31,8 @@ public class ReplicationPartitioning implements ProudPartitioning
 
         for (int p=0; p < partitionsCount; p++) {
             if (dataPoint.id % partitionsCount == p) {
-                PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(p, dataPoint);
+                AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  0);
+                PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(p, dataPointCopy);
 
                 dataPartitions.add(partitionedData);
             } else {

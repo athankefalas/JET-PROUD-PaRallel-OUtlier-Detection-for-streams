@@ -469,11 +469,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
         public void insertPoint(LSKYProudData el) {
             // Get the points so far from latest to earliest
-            //  - This works because the elements where added in reverse
-            List<LSKYProudData> points = Lists.reversing(state.index.values());
-
-            // IF the above is incorrect try this:
-            points = state.index.values().stream()
+            List<LSKYProudData> points = state.index.values().stream()
                     .sorted(Comparator.comparingLong(LSKYProudData::getArrival).reversed())
                     .collect(Collectors.toList());
 
@@ -509,7 +505,11 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
 
             boolean resultFlag = true;
 
-            for (LSKYProudData data : Lists.reversing(state.index.values())) {
+            List<LSKYProudData> indexValuesByArrival = state.index.values().stream()
+                    .sorted(Comparator.comparingLong(LSKYProudData::getArrival).reversed())
+                    .collect(Collectors.toList());
+
+            for (LSKYProudData data : indexValuesByArrival) {
                 boolean innerResultFlag = true;
 
                 if (data.arrival >= window.end - slide) {
@@ -553,7 +553,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
         }
 
         public boolean neighbourSkyband(LSKYProudData el, LSKYProudData neighbour, double distance) {
-            double normalizedDistance = normalizeDistance(distance);
+            int normalizedDistance = normalizeDistance(distance);
 
             int count = 0;
 
@@ -562,20 +562,18 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
             }
 
             if (count <= K_max - 1) {
-                int distanceKey = (int) Math.floor(normalizedDistance);
-
-                List<Tuple<Integer, Long>> value = el.lsky.getOrDefault(distanceKey, new ArrayList<>());
+                List<Tuple<Integer, Long>> value = el.lsky.getOrDefault(normalizedDistance, new ArrayList<>());
                 value.add(new Tuple<>(neighbour.id, neighbour.arrival));
 
-                el.lsky.put(distanceKey, value);
+                el.lsky.put(normalizedDistance, value);
                 return true;
             }
 
             return false;
         }
 
-        public double normalizeDistance(double distance) {
-            double normalizedDistance = 0.0;
+        public int normalizeDistance(double distance) {
+            int normalizedDistance = 0;
             int i = 0;
 
             do {

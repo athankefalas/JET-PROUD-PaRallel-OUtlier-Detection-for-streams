@@ -8,6 +8,7 @@ import edu.auth.jetproud.application.config.ProudConfiguration;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
+import edu.auth.jetproud.model.LSKYProudData;
 import edu.auth.jetproud.model.McskyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
@@ -555,7 +556,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         public abstract void deletePoint(McskyProudData el);
 
         public boolean neighbourSkyband(McskyProudData el, McskyProudData neighbour, double distance) {
-            double normalizedDistance = normalizeDistance(distance);
+            int normalizedDistance = normalizeDistance(distance);
 
             int count = 0;
 
@@ -564,21 +565,20 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             }
 
             if (count <= K_max - 1) {
-                int distanceKey = (int) Math.floor(normalizedDistance);
 
                 List<Tuple<Integer, Long>> value = el.lsky
-                        .getOrDefault(distanceKey, new ArrayList<>());
+                        .getOrDefault(normalizedDistance, new ArrayList<>());
                 value.add(new Tuple<>(neighbour.id, neighbour.arrival));
 
-                el.lsky.put(distanceKey,value);
+                el.lsky.put(normalizedDistance,value);
                 return true;
             }
 
             return false;
         }
 
-        public double normalizeDistance(double distance) {
-            double normalizedDistance = 0.0;
+        public int normalizeDistance(double distance) {
+            int normalizedDistance = 0;
             int i = 0;
 
             do {
@@ -615,7 +615,9 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             } else { // Check against PD
                 // List to hold points for new cluster formation
                 List<McskyProudData> NC = new ArrayList<>();
-                List<McskyProudData> items = Lists.reversing(state.index.values());
+                List<McskyProudData> items = state.index.values().stream()
+                        .sorted(Comparator.comparingLong(McskyProudData::getArrival).reversed())
+                        .collect(Collectors.toList());
 
                 // Find the points so far from latest to earliest
                 for(McskyProudData p:items) {
@@ -673,8 +675,12 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             // List to hold points for new cluster formation
             List<McskyProudData> NC = Lists.make();
 
+            List<McskyProudData> indexValuesByArrival = state.index.values().stream()
+                    .sorted(Comparator.comparingLong(McskyProudData::getArrival).reversed())
+                    .collect(Collectors.toList());
+
             // Check new points
-            for (McskyProudData data : Lists.reversing(state.index.values())) {
+            for (McskyProudData data : indexValuesByArrival) {
                 boolean innerResultFlag = true;
 
                 if (data.arrival >= window.end - slide) {
@@ -771,7 +777,9 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             } else { // Check against PD
                 // List to hold points for new cluster formation
                 List<McskyProudData> NC = new ArrayList<>();
-                List<McskyProudData> items = Lists.reversing(state.index.values());
+                List<McskyProudData> items = state.index.values().stream()
+                        .sorted(Comparator.comparingLong(McskyProudData::getArrival).reversed())
+                        .collect(Collectors.toList());
 
                 // Find the points so far from latest to earliest
                 for(McskyProudData p:items) {
@@ -827,8 +835,12 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             // List to hold points for new cluster formation
             List<McskyProudData> NC = Lists.make();
 
+            List<McskyProudData> indexValuesByArrival = state.index.values().stream()
+                    .sorted(Comparator.comparingLong(McskyProudData::getArrival).reversed())
+                    .collect(Collectors.toList());
+
             // Check new points
-            for (McskyProudData data : Lists.reversing(state.index.values())) {
+            for (McskyProudData data : indexValuesByArrival) {
                 boolean innerResultFlag = true;
 
                 if (data.arrival >= window.end - slide) {

@@ -55,11 +55,11 @@ public class OutlierQuery implements Serializable
     @Override
     public String toString() {
         return "(" +
-                "range=" + range +
-                ", kNeighbours=" + kNeighbours +
-                ", window=" + window +
-                ", slide=" + slide +
-                ", outlierCount=" + outlierCount +
+                "r=" + range +
+                ", k=" + kNeighbours +
+                ", w=" + window +
+                ", s=" + slide +
+                ", outliers=" + outlierCount +
                 ')';
     }
 }
