@@ -6,14 +6,15 @@ import edu.auth.jetproud.utils.Tuple;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AmcodProudData extends AnyProudData
 {
 
     //Neighbor data
     public int count_after;
-    public List<Tuple<Long, Double>> nn_before_set;
-    public List<Double> count_after_set;
+    public CopyOnWriteArrayList<Tuple<Long, Double>> nn_before_set;
+    public CopyOnWriteArrayList<Double> count_after_set;
 
     //Skip flag
     public boolean safe_inlier;
@@ -34,8 +35,8 @@ public class AmcodProudData extends AnyProudData
 
     private void postInit() {
         count_after = 0;
-        nn_before_set = Lists.make();
-        count_after_set = Lists.make();
+        nn_before_set = new CopyOnWriteArrayList<>();
+        count_after_set = new CopyOnWriteArrayList<>();
 
         safe_inlier = false;
 

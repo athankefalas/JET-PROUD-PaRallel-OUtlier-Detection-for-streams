@@ -147,9 +147,9 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
 
                     // Find outliers
                     long outliersCount = current.pd.values().stream()
-                            .filter((p)-> !p.safe_inlier && p.flag == 0)
+                            .filter((p)-> !p.safe_inlier.get() && p.flag == 0)
                             .filter((p)->{
-                                return p.count_after + p.nn_before.stream()
+                                return p.count_after.get() + p.nn_before.stream()
                                         .filter((key)-> key >= windowStart)
                                         .count() < k;
                             })
@@ -321,9 +321,10 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
             if (el.arrival > neighbour.arrival) {
                 el.insert_nn_before(neighbour.arrival, k);
             } else {
-                el.count_after += 1;
-                if (el.count_after >= k)
-                    el.safe_inlier = true;
+                el.count_after.addAndGet(1);
+
+                if (el.count_after.get() >= k)
+                    el.safe_inlier.set(true);
             }
         }
 

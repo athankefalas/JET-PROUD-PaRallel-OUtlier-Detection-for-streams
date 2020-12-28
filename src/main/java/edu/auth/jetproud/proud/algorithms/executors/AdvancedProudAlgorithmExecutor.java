@@ -155,18 +155,18 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                             if (neighbour == null)
                                 neighbour = node;
 
-                            neighbour.count_after++;
+                            neighbour.count_after.addAndGet(1);
 
-                            if (neighbour.count_after >= k)
-                                neighbour.safe_inlier = true;
+                            if (neighbour.count_after.get() >= k)
+                                neighbour.safe_inlier.set(true);
 
                         } else {
 
                             if (el.flag == 0) {
-                                element.count_after++;
+                                element.count_after.addAndGet(1);
 
-                                if (element.count_after >= k)
-                                    element.safe_inlier = true;
+                                if (element.count_after.get() >= k)
+                                    element.safe_inlier.set(true);
                             }
                         }
                     }
@@ -248,12 +248,12 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                             int outliers = 0;
 
                             for (AdvancedProudData el:current.getOutliers().values()) {
-                                if (!el.safe_inlier) {
+                                if (!el.safe_inlier.get()) {
                                     long nnBefore = el.nn_before.stream()
                                             .filter((it)->it >= windowEnd - w)
                                             .count();
 
-                                    if (nnBefore + el.count_after < k)
+                                    if (nnBefore + el.count_after.get() < k)
                                         outliers++;
                                 }
                             }

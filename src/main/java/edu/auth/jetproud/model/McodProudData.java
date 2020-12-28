@@ -3,13 +3,14 @@ package edu.auth.jetproud.model;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class McodProudData extends NaiveProudData
 {
 
     //Micro-cluster data
     public int mc;
-    public Set<Integer> Rmc;
+    public CopyOnWriteArraySet<Integer> Rmc;
 
     public McodProudData(AnyProudData point) {
         super(point);
@@ -23,7 +24,7 @@ public class McodProudData extends NaiveProudData
 
     private void postInit() {
         mc = -1;
-        Rmc = new HashSet<>();
+        Rmc = new CopyOnWriteArraySet<>();
     }
 
     @Override

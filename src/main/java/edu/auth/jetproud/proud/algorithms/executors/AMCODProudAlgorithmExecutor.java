@@ -352,7 +352,8 @@ public class AMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Amcod
                     //Do the skyband
                     List<Tuple<Long, Double>> tmp_nn_before = kSkyband(K_max - el.count_after - 1, el.nn_before_set);
                     el.nn_before_set.clear();
-                    el.nn_before_set = tmp_nn_before;
+                    el.nn_before_set = new CopyOnWriteArrayList<>();
+                    el.nn_before_set.addAll(tmp_nn_before);
 
                     state.pd.put(el.id, el);
                 }

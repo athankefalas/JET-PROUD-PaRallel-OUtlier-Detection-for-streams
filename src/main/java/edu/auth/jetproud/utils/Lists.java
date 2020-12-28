@@ -1,5 +1,9 @@
 package edu.auth.jetproud.utils;
 
+import edu.auth.jetproud.datastructures.mtree.MTree;
+import edu.auth.jetproud.datastructures.mtree.ResultItem;
+import edu.auth.jetproud.model.AnyProudData;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -408,6 +412,20 @@ public final class Lists
             return null;
 
         return list.get(index);
+    }
+
+    //// Proud Specific
+
+    public static <T extends AnyProudData> List<T> withNodesFrom(MTree<T>.Query query) {
+        List<T> list = make();
+
+        for (ResultItem<T> item:query) {
+            if (item == null || item.data == null)
+                continue;
+            list.add(item.data);
+        }
+
+        return list;
     }
 
 }

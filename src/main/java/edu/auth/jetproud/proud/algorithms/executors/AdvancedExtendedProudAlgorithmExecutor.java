@@ -143,19 +143,20 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                                     element.insert_nn_before(neighbour.arrival, k);
 
                                 if (neighbour.flag == 0) {
-                                    neighbour.count_after++;
-                                    if (neighbour.count_after >= k)
-                                        neighbour.safe_inlier = true;
+                                    neighbour.count_after.addAndGet(1);
+
+                                    if (neighbour.count_after.get() >= k)
+                                        neighbour.safe_inlier.set(true);
                                 }
 
                             } else {
                                 AdvancedProudData element = current.map.get(el.id);
 
                                 if (el.flag == 0) {
-                                    element.count_after++;
+                                    element.count_after.addAndGet(1);
 
-                                    if (element.count_after >= k)
-                                        element.safe_inlier = true;
+                                    if (element.count_after.get() >= k)
+                                        element.safe_inlier.set(true);
                                 }
                             }
                         }
@@ -166,12 +167,12 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                     int outliersCount = 0;
 
                     for (AdvancedProudData el:current.map.values()) {
-                        if (el.flag == 0 && !el.safe_inlier) {
+                        if (el.flag == 0 && !el.safe_inlier.get()) {
                             long nnBefore = el.nn_before.stream()
                                     .filter((it)->it >= windowEnd - w)
                                     .count();
 
-                            if (el.count_after + nnBefore < k)
+                            if (el.count_after.get() + nnBefore < k)
                                 outliersCount++;
                         }
                     }

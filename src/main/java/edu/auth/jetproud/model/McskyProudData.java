@@ -5,12 +5,13 @@ import edu.auth.jetproud.utils.Tuple;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class McskyProudData extends AnyProudData
 {
 
     //Neighbor data
-    public Map<Integer, List<Tuple<Integer, Long>>> lsky;
+    public ConcurrentHashMap<Integer, List<Tuple<Integer, Long>>> lsky;
     //Skip flag
     public boolean safe_inlier;
     //Micro-cluster data
@@ -27,7 +28,7 @@ public class McskyProudData extends AnyProudData
     }
 
     private void postInit() {
-        lsky = new HashMap<>();
+        lsky = new ConcurrentHashMap<>();
         safe_inlier = false;
         mc = -1;
     }

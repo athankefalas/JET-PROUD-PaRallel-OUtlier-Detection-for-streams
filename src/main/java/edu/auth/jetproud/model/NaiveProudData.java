@@ -3,14 +3,17 @@ package edu.auth.jetproud.model;
 import edu.auth.jetproud.utils.Lists;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NaiveProudData extends AnyProudData
 {
     //Neighbor data
-    public int count_after;
-    public List<Long> nn_before;
+    public AtomicInteger count_after;
+    public CopyOnWriteArrayList<Long> nn_before;
     // Skip flag
-    public boolean safe_inlier;
+    public AtomicBoolean safe_inlier;
 
     public NaiveProudData(AnyProudData point) {
         super(point);
@@ -23,9 +26,9 @@ public class NaiveProudData extends AnyProudData
     }
 
     private void postInit() {
-        count_after = 0;
-        nn_before = Lists.make();
-        safe_inlier = false;
+        count_after = new AtomicInteger(0);
+        nn_before = new CopyOnWriteArrayList<>();
+        safe_inlier = new AtomicBoolean(false);
     }
 
     // Implementation
@@ -65,7 +68,7 @@ public class NaiveProudData extends AnyProudData
     // Clear Variables
     public void clear(int newMc) {
         nn_before.clear();
-        count_after = 0;
+        count_after.set(0);
     }
 
 

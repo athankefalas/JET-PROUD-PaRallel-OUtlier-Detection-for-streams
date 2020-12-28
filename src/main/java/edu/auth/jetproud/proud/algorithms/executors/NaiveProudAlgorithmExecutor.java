@@ -79,7 +79,9 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                     .collect(Collectors.toList());
 
             // Evict old elements
-            windowItems = Naive.evict(windowItems, windowStart, windowEnd, slide);
+            windowItems = Naive.evict(windowItems, windowStart, windowEnd, slide).stream()
+                    .sorted(Comparator.comparingLong(NaiveProudData::getArrival))
+                    .collect(Collectors.toList());
 
             Naive naive = new Naive(windowStart, windowEnd, K, R, slide);
 
@@ -94,7 +96,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
             // Add all non-safe in-liers to the outliers accumulator
             for (NaiveProudData currentNode : windowItems) {
-                if (!currentNode.safe_inlier)
+                if (!currentNode.safe_inlier.get())
                     outliers.add(currentNode);
             }
 
@@ -114,7 +116,9 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                             long windowStart = window.start();
                             long windowEnd = window.end();
 
-                            List<NaiveProudData> elements = window.getValue();
+                            List<NaiveProudData> elements = window.getValue().stream()
+                                    .sorted(Comparator.comparingLong(NaiveProudData::getArrival))
+                                    .collect(Collectors.toList());
 
                             final String METADATA_KEY = "METADATA_"+windowKey;
                             OutlierMetadata<NaiveProudData> current = stateHolder.get(METADATA_KEY);
@@ -154,7 +158,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                         current.getOutliers().put(el.id, el);
                                     } else {
                                         if (el.arrival < windowEnd - slide) {
-                                            oldElement.count_after = el.count_after;
+                                            oldElement.count_after.set(el.count_after.get());
                                             current.getOutliers().put(el.id, oldElement);
                                         } else {
                                             NaiveProudData combinedValue = Naive.combineElements(oldElement, el, k);
@@ -175,7 +179,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                         .filter((it)->it >= windowEnd - w)
                                         .count();
 
-                                if (nnBefore + el.count_after < k)
+                                if (nnBefore + el.count_after.get() < k)
                                     outliers++;
                             }
 
@@ -192,7 +196,9 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         public static List<NaiveProudData> evict(List<NaiveProudData> windowData, long windowStart, long windowEnd, long slide) {
             List<NaiveProudData> evictedWindowData = Lists.copyOf(windowData);
 
-            evictedWindowData.removeIf((it)-> it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide);
+            evictedWindowData.removeIf((it)-> {
+                return it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide;
+            });
 
             return evictedWindowData;
         }
@@ -225,10 +231,10 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                 if (neighbour.arrival < windowEnd - slide) {
                     node.insert_nn_before(neighbour.arrival, K);
                 } else {
-                    node.count_after += 1;
+                    node.count_after.addAndGet(1);
 
-                    if (node.count_after >= K) {
-                        node.safe_inlier = true;
+                    if (node.count_after.get() >= K) {
+                        node.safe_inlier.set(true);
                     }
                 }
             }
@@ -239,10 +245,10 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
             // Add new neighbor to previous nodes
             for (NaiveProudData neighbour: active) {
-                neighbour.count_after += 1;
+                neighbour.count_after.addAndGet(1);
 
-                if (neighbour.count_after >= K)
-                    neighbour.safe_inlier = true;
+                if (neighbour.count_after.get() >= K)
+                    neighbour.safe_inlier.set(true);
             }
         }
 
