@@ -35,7 +35,7 @@ public class BalancedPartitioning<DATA> implements PartitionFunction<DATA>
      *     Return result
      * </pre>
      *
-     * @see mtree.PartitionFunction#process(mtree.utils.Pair, java.util.Set, mtree.DistanceFunction)
+     * @see PartitionFunction#process(Pair, Set, DistanceFunction)
      */
     @Override
     public Pair<Set<DATA>> process(Pair<DATA> promoted, Set<DATA> dataSet, DistanceFunction<? super DATA> distanceFunction) {

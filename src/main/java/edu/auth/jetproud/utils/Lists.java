@@ -4,11 +4,9 @@ import edu.auth.jetproud.datastructures.mtree.MTree;
 import edu.auth.jetproud.datastructures.mtree.ResultItem;
 import edu.auth.jetproud.model.AnyProudData;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public final class Lists
 {
@@ -239,6 +237,26 @@ public final class Lists
 
     public static <E> List<E> reversing(Collection<E> collection) {
         return reverse( copyOf(collection) );
+    }
+
+    public static <E> List<E> shuffling(Collection<E> collection) {
+        Random random = new Random();
+
+        List<E> elements = copyOf(collection);
+        List<Integer> elementIndices = make(elements.size());
+
+        while (elementIndices.size() < elements.size()) {
+            int index = random.nextInt(elements.size());
+
+            if (elementIndices.contains(index))
+                continue;
+
+            elementIndices.add(index);
+        }
+
+        return elementIndices.stream()
+                .map(elements::get)
+                .collect(Collectors.toList());
     }
 
     @SafeVarargs

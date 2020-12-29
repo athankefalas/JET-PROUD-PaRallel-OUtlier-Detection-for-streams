@@ -12,12 +12,4 @@ public class AdvancedProudData extends NaiveProudData {
         super(id, value, arrival, flag);
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof AdvancedProudData) {
-            return super.equals(obj);
-        } else {
-            return false;
-        }
-    }
 }

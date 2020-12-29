@@ -8,9 +8,14 @@ import edu.auth.jetproud.datastructures.mtree.exceptions.SplitNodeReplacementExc
 import edu.auth.jetproud.datastructures.mtree.partition.PartitionFunction;
 import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
 import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
+import edu.auth.jetproud.utils.Lists;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * The main class that implements the M-Tree.
@@ -19,7 +24,7 @@ import java.util.*;
  *               this type are stored in HashMaps and HashSets, so their
  *               {@code hashCode()} and {@code equals()} methods must be consistent.
  */
-public class MTree<DATA extends Serializable> implements Serializable
+public class MTree<DATA extends MTreeInsertable & Serializable> implements Serializable
 {
 
     /**
@@ -27,7 +32,7 @@ public class MTree<DATA extends Serializable> implements Serializable
      * nearest-neighbors query.
      * <p>
      * <p>The neighbors are presented in non-decreasing order from the {@code
-     * queryData} argument to the {@link MTree#getNearest(Object, double, int)
+     * queryData} argument to the @link MTree#getNearest(DATA, double, int)
      * getNearest*()}
      * call.
      * <p>
@@ -42,9 +47,9 @@ public class MTree<DATA extends Serializable> implements Serializable
         private class ResultsIterator implements Iterator<ResultItem<DATA>>, Serializable {
 
             private class ItemWithDistances<U> implements Comparable<ItemWithDistances<U>>, Serializable {
-                private U item;
-                private double distance;
-                private double minDistance;
+                private final U item;
+                private final double distance;
+                private final double minDistance;
 
                 public ItemWithDistances(U item, double distance, double minDistance) {
                     this.item = item;
@@ -54,22 +59,16 @@ public class MTree<DATA extends Serializable> implements Serializable
 
                 @Override
                 public int compareTo(ItemWithDistances<U> that) {
-                    if (this.minDistance < that.minDistance) {
-                        return -1;
-                    } else if (this.minDistance > that.minDistance) {
-                        return +1;
-                    } else {
-                        return 0;
-                    }
+                    return Double.compare(this.minDistance, that.minDistance);
                 }
             }
 
 
             private ResultItem<DATA> nextResultItem = null;
             private boolean finished = false;
-            private PriorityQueue<ItemWithDistances<Node>> pendingQueue = new PriorityQueue<ItemWithDistances<Node>>();
+            private final PriorityQueue<ItemWithDistances<Node>> pendingQueue = new PriorityQueue<>();
             private double nextPendingMinDistance;
-            private PriorityQueue<ItemWithDistances<Entry>> nearestQueue = new PriorityQueue<ItemWithDistances<Entry>>();
+            private final PriorityQueue<ItemWithDistances<Entry>> nearestQueue = new PriorityQueue<>();
             private int yieldedCount;
 
             private ResultsIterator() {
@@ -81,7 +80,7 @@ public class MTree<DATA extends Serializable> implements Serializable
                 double distance = MTree.this.distanceFunction.calculate(Query.this.data, MTree.this.root.data);
                 double minDistance = Math.max(distance - MTree.this.root.radius, 0.0);
 
-                pendingQueue.add(new ItemWithDistances<Node>(MTree.this.root, distance, minDistance));
+                pendingQueue.add(new ItemWithDistances<>(MTree.this.root, distance, minDistance));
                 nextPendingMinDistance = minDistance;
             }
 
@@ -143,15 +142,14 @@ public class MTree<DATA extends Serializable> implements Serializable
                         if (Math.abs(pending.distance - child.distanceToParent) - child.radius <= Query.this.range) {
                             double childDistance = MTree.this.distanceFunction.calculate(Query.this.data, child.data);
                             double childMinDistance = Math.max(childDistance - child.radius, 0.0);
+
                             if (childMinDistance <= Query.this.range) {
                                 if (child instanceof MTree.Entry) {
-                                    @SuppressWarnings("unchecked")
                                     Entry entry = (Entry) child;
-                                    nearestQueue.add(new ItemWithDistances<Entry>(entry, childDistance, childMinDistance));
+                                    nearestQueue.add(new ItemWithDistances<>(entry, childDistance, childMinDistance));
                                 } else {
-                                    @SuppressWarnings("unchecked")
                                     Node childNode = (Node) child;
-                                    pendingQueue.add(new ItemWithDistances<Node>(childNode, childDistance, childMinDistance));
+                                    pendingQueue.add(new ItemWithDistances<>(childNode, childDistance, childMinDistance));
                                 }
                             }
                         }
@@ -173,7 +171,7 @@ public class MTree<DATA extends Serializable> implements Serializable
                     ItemWithDistances<Entry> nextNearest = nearestQueue.peek();
                     if (nextNearest.distance <= nextPendingMinDistance) {
                         nearestQueue.poll();
-                        nextResultItem = new ResultItem<DATA>(nextNearest.item.data, nextNearest.distance);
+                        nextResultItem = new ResultItem<>(nextNearest.item.data, nextNearest.distance);
                         ++yieldedCount;
                         return true;
                     }
@@ -198,9 +196,9 @@ public class MTree<DATA extends Serializable> implements Serializable
         }
 
 
-        private DATA data;
-        private double range;
-        private int limit;
+        private final DATA data;
+        private final double range;
+        private final int limit;
     }
 
 
@@ -308,7 +306,7 @@ public class MTree<DATA extends Serializable> implements Serializable
         Double min = Double.MAX_VALUE;
         Integer minId = Integer.MAX_VALUE;
 
-        Double myDistance = MTree.this.distanceFunction.calculate(newKid, root.data);
+        double myDistance = MTree.this.distanceFunction.calculate(newKid, root.data);
 
         for (IndexItem child : root.children.values()) {
 
@@ -331,13 +329,12 @@ public class MTree<DATA extends Serializable> implements Serializable
     }
 
     public int getHeight() {
-        IndexItem root = this.root;
+        Node root = this.root;
         if (root == null) {
             return 0;
         } else {
             int max = 0;
-            Node root2 = (Node) root;
-            for (IndexItem child : root2.children.values()) {
+            for (IndexItem child : root.children.values()) {
                 int height = getHeight(child);
                 if (height > max) max = height;
             }
@@ -361,10 +358,10 @@ public class MTree<DATA extends Serializable> implements Serializable
 
     public void breadth(int split) {
         Queue<Node> queue = new LinkedList<Node>();
-        Integer noPoints = 0;
+        int noPoints = 0;
 
-        queue.clear();
         queue.add(root);
+
         while (!queue.isEmpty()) {
             Node node = queue.remove();
             for (IndexItem child : node.children.values()) {
@@ -480,9 +477,9 @@ public class MTree<DATA extends Serializable> implements Serializable
         private class ResultsIterator implements Iterator<MyResultItem> {
 
             private class ItemWithDistances<U> implements Comparable<ItemWithDistances<U>> {
-                private U item;
-                private double distance;
-                private double minDistance;
+                private final U item;
+                private final double distance;
+                private final double minDistance;
 
                 public ItemWithDistances(U item, double distance, double minDistance) {
                     this.item = item;
@@ -492,19 +489,13 @@ public class MTree<DATA extends Serializable> implements Serializable
 
                 @Override
                 public int compareTo(ItemWithDistances<U> that) {
-                    if (this.minDistance < that.minDistance) {
-                        return -1;
-                    } else if (this.minDistance > that.minDistance) {
-                        return +1;
-                    } else {
-                        return 0;
-                    }
+                    return Double.compare(this.minDistance, that.minDistance);
                 }
             }
 
             private MyResultItem nextResultItem = null;
             private boolean finished = false;
-            private PriorityQueue<ItemWithDistances<Node>> pendingQueue = new PriorityQueue<ItemWithDistances<Node>>();
+            private final PriorityQueue<ItemWithDistances<Node>> pendingQueue = new PriorityQueue<>();
             private double nextPendingMinDistance;
             private int yieldedCount;
 
@@ -517,7 +508,7 @@ public class MTree<DATA extends Serializable> implements Serializable
                 double distance = MTree.this.distanceFunction.calculate(MyQuery.this.data, MTree.this.root.data);
                 double minDistance = Math.max(distance - MTree.this.root.radius, 0.0);
 
-                pendingQueue.add(new ItemWithDistances<Node>(MTree.this.root, distance, minDistance));
+                pendingQueue.add(new ItemWithDistances<>(MTree.this.root, distance, minDistance));
                 nextPendingMinDistance = minDistance;
             }
 
@@ -634,6 +625,65 @@ public class MTree<DATA extends Serializable> implements Serializable
     //THODORIS END CUSTOM FUNCTIONS
 
 
+    // A. Kefalas Data caching Impl
+    private ConcurrentHashMap<Long, CopyOnWriteArrayList<DATA>> dataPoints = new ConcurrentHashMap<>();
+
+    /**
+     * Adds and indexes a data object, concurrently.
+     * <p>
+     * <p>An object that is already indexed should not be added. This method
+     * attempts to amend this by caching data for each added object and adding
+     * each spatially equal item only once.
+     *
+     * @param data The data object to index.
+     */
+    public synchronized void addOrCache(DATA data) {
+
+        long dataSpacialIdentity = data.spacialIdentity();
+
+        if (!dataPoints.containsKey(dataSpacialIdentity)) {
+            synchronized (this) {
+                add(data);
+                dataPoints.put(dataSpacialIdentity, new CopyOnWriteArrayList<>(Lists.of(data)));
+            }
+        } else {
+            synchronized (this) {
+                CopyOnWriteArrayList<DATA> items = dataPoints.getOrDefault(dataSpacialIdentity, new CopyOnWriteArrayList<>());
+                items.add(data);
+
+                dataPoints.put(dataSpacialIdentity, items);
+            }
+        }
+    }
+
+    /**
+     * Performs a nearest-neighbors query on the M-Tree, constrained by distance.
+     *
+     * @param queryData The query data object.
+     * @param range     The maximum distance from {@code queryData} to fetched
+     *                  neighbors.
+     * @return A {@link List<DATA>} with the nearest query result data and matching cached data.
+     */
+    public List<DATA> findNearestInRange(DATA queryData, double range) {
+        Query result = getNearest(queryData, range, Integer.MAX_VALUE);
+
+        List<Long> resultIdsList = new LinkedList<>();
+
+        for (ResultItem<DATA> item:result) {
+            if (item == null || item.data == null)
+                continue;
+            resultIdsList.add(item.data.spacialIdentity());
+        }
+
+        return resultIdsList.stream()
+                .map((spacialId)->dataPoints.getOrDefault(spacialId, new CopyOnWriteArrayList<>()))
+                .flatMap(Collection::stream)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    // END Data caching Impl
+
     /**
      * Adds and indexes a data object.
      * <p>
@@ -655,8 +705,8 @@ public class MTree<DATA extends Serializable> implements Serializable
             try {
                 root.addData(data, distance);
             } catch (SplitNodeReplacementException e) {
-                Node newRoot = new RootNode(data);
-                root = newRoot;
+                root = new RootNode(data);
+
                 for (int i = 0; i < e.newNodes.length; i++) {
                     @SuppressWarnings("unchecked")
                     Node newNode = (Node) e.newNodes[i];
@@ -677,6 +727,14 @@ public class MTree<DATA extends Serializable> implements Serializable
     public boolean remove(DATA data) {
         if (root == null) {
             return false;
+        }
+
+        long dataSpacialIdentity = data.spacialIdentity();
+
+        if (dataPoints.containsKey(dataSpacialIdentity)) {
+            CopyOnWriteArrayList<DATA> items = dataPoints.get(dataSpacialIdentity);
+            items.removeIf((it)->it.equals(data));
+            dataPoints.put(dataSpacialIdentity, items);
         }
 
         double distanceToRoot = distanceFunction.calculate(data, root.data);
@@ -782,7 +840,7 @@ public class MTree<DATA extends Serializable> implements Serializable
 
     private abstract class Node extends IndexItem implements Serializable {
 
-        protected Map<DATA, IndexItem> children = new HashMap<DATA, IndexItem>();
+        protected Map<DATA, IndexItem> children = new ConcurrentHashMap<>();
         protected Rootness rootness;
         protected Leafness<DATA> leafness;
 
@@ -835,18 +893,21 @@ public class MTree<DATA extends Serializable> implements Serializable
             leafness.doRemoveData(data, distance);
         }
 
-        private final void checkMaxCapacity() throws SplitNodeReplacementException {
+        private void checkMaxCapacity() throws SplitNodeReplacementException {
+            // TODO: Check split works
             if (children.size() > MTree.this.maxNodeCapacity) {
                 DistanceFunction<? super DATA> cachedDistanceFunction = DistanceFunction.cached(MTree.this.distanceFunction);
                 SplitFunction.SplitResult<DATA> splitResult = MTree.this.splitFunction.process(children.keySet(), cachedDistanceFunction);
 
                 Node newNode0 = null;
                 Node newNode1 = null;
+
                 for (int i = 0; i < 2; ++i) {
                     DATA promotedData = splitResult.promoted.get(i);
                     Set<DATA> partition = splitResult.partitions.get(i);
 
                     Node newNode = newSplitNodeReplacement(promotedData);
+
                     for (DATA data : partition) {
                         IndexItem child = children.get(data);
                         children.remove(data);
@@ -860,6 +921,7 @@ public class MTree<DATA extends Serializable> implements Serializable
                         newNode1 = newNode;
                     }
                 }
+
                 assert children.isEmpty();
 
                 throw new SplitNodeReplacementException(newNode0, newNode1);
@@ -928,7 +990,7 @@ public class MTree<DATA extends Serializable> implements Serializable
         protected Node thisNode;
     }
 
-    private interface Leafness<DATA extends Serializable> extends Serializable {
+    private interface Leafness<DATA extends MTreeInsertable & Serializable> extends Serializable {
         void doAddData(DATA data, double distance);
 
         void addChild(MTree<DATA>.IndexItem child, double distance);

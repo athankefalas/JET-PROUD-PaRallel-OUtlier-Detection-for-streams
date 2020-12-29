@@ -1,13 +1,11 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
-import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.datastructures.mtree.MTree;
-import edu.auth.jetproud.datastructures.mtree.ResultItem;
 import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
 import edu.auth.jetproud.datastructures.mtree.partition.PartitionFunction;
 import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
@@ -20,7 +18,6 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.KeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
@@ -120,7 +117,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                         }
 
                         for (SlicingProudData el:elements) {
-                            mTree.add(el);
+                            mTree.addOrCache(el);
                         }
 
                         HashMap<Long, MTree<SlicingProudData>> trees = new HashMap<>();
@@ -129,9 +126,10 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                         current = new SlicingState(trees, triggers);
                         stateHolder.put(STATE_KEY, current);
                     } else {
+                        // Add elements to MTree
                         elements.stream()
                                 .filter((el)->el.arrival >= windowEnd - slide)
-                                .forEach(mTree::add);
+                                .forEach(mTree::addOrCache);
 
                         long max = current.triggers.keySet().stream()
                                 .max(Long::compare)
@@ -245,9 +243,8 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                 MTree<SlicingProudData> mTree = state.trees.getOrDefault(nextSlide, null);
 
                 if (mTree != null) {
-                    MTree<SlicingProudData>.Query treeQuery = mTree.getNearestByRange(point, r);
-
-                    int nodeCount = Lists.withNodesFrom(treeQuery).size();
+                    List<SlicingProudData> nearest = mTree.findNearestInRange(point, r);
+                    int nodeCount = nearest.size();
 
                     point.count_after.addAndGet(nodeCount);
                     neighbourCount += nodeCount;
@@ -272,9 +269,8 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
             long first = arrivalTime - window.start;
             long div = first / query.slide;
             int intDiv = (int) div;
-            long slide = window.start + ((long) intDiv * query.slide);
 
-            return slide;
+            return window.start + ((long) intDiv * query.slide);
         }
 
         public void insertPoint(SlicingProudData point) {
@@ -289,9 +285,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                 MTree<SlicingProudData> mTree = state.trees.getOrDefault(nextSlide, null);
 
                 if (mTree != null) {
-                    MTree<SlicingProudData>.Query treeQuery = mTree.getNearestByRange(point, r);
-
-                    List<SlicingProudData> items = Lists.withNodesFrom(treeQuery);
+                    List<SlicingProudData> items = mTree.findNearestInRange(point, r);
 
                     if (!items.isEmpty()) {
                         state.triggers.get(nextSlide).add(point.id);

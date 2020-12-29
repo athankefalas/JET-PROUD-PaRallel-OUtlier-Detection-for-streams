@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * An object that can calculate the distance between two data objects.
@@ -45,7 +46,7 @@ public interface DistanceFunction<DATA> extends Serializable {
     static <DATA> DistanceFunction<DATA> cached(DistanceFunction<DATA> distanceFunction) {
         return new DistanceFunction<DATA>() {
 
-            private final Map<Integer, Double> cache = new HashMap<>();
+            private final ConcurrentHashMap<Integer, Double> cache = new ConcurrentHashMap<>();
             private final DistanceFunction<DATA> delegatingDistanceFunction = distanceFunction;
 
             /**

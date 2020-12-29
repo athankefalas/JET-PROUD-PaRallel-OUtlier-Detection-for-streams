@@ -1,5 +1,6 @@
 package edu.auth.jetproud.model;
 
+import edu.auth.jetproud.datastructures.mtree.MTreeInsertable;
 import edu.auth.jetproud.model.contracts.EuclideanCoordinate;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 import edu.auth.jetproud.utils.Lists;
@@ -7,14 +8,13 @@ import edu.auth.jetproud.utils.Lists;
 import java.io.Serializable;
 import java.util.List;
 
-public class AnyProudData implements Serializable, Comparable<AnyProudData>, EuclideanCoordinate
+public class AnyProudData implements Serializable, Comparable<AnyProudData>, EuclideanCoordinate, MTreeInsertable
 {
     public int id;
     public List<Double> value;
     public int dimensions;
     public long arrival;
     public int flag;
-    public List<List<Double>> state;
 
     public AnyProudData(AnyProudData point) {
         this(point.id, point.value, point.arrival, point.flag);
@@ -26,7 +26,6 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
         this.dimensions = value.size();
         this.arrival = arrival;
         this.flag = flag;
-        this.state = Lists.of(value);
     }
 
     // Getters
@@ -57,40 +56,45 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
 
     // Hashcode, CompareTo, Equals & toString Implementations
 
+
+    @Override
+    public long spacialIdentity() {
+        return value.hashCode();
+    }
+
     @Override
     public int hashCode() {
-        return state.stream().map(List::hashCode).reduce(0, (a,b)->31 * a + b);
+        // Auto-generated hashcode
+        int result = id;
+        result = 31 * result + value.hashCode();
+        result = 31 * result + dimensions;
+        result = 31 * result + (int) (arrival ^ (arrival >>> 32));
+        result = 31 * result + flag;
+        //return result;
+
+        // Use list hashcode instead, it's the same thing.
+        //return Lists.of(value).stream().map(List::hashCode).reduce(0, (a,b)->31 * a + b);
+        return value.hashCode();
     }
 
     @Override
     public int compareTo(AnyProudData other) {
         int dimensions = Math.min(this.dimensions, other.dimensions);
 
-        for (int i=0; i < dimensions; i++) {
-            if (value.get(i) > other.value.get(i)) {
-                return 1;
-            } else if (value.get(i) < other.value.get(i)) {
-                return -1;
-            } else {
-                return 0;
-            }
+        if (dimensions >= 1) {
+            return value.get(0).compareTo(other.value.get(0));
         }
 
-        if (this.dimensions > dimensions)
-            return 1;
-        else
-            return -1;
+        return Integer.compare(this.dimensions, dimensions);
     }
 
     @Override
     public boolean equals(Object other) {
         if (other instanceof AnyProudData) {
             AnyProudData otherData = (AnyProudData) other;
-            boolean areEqual = id == otherData.id
+            return id == otherData.id
                     && dimensions == otherData.dimensions
                     && value.equals(otherData.value);
-
-            return areEqual;
         } else {
             return super.equals(other);
         }

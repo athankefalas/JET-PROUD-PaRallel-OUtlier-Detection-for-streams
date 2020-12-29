@@ -1,6 +1,7 @@
 package edu.auth.jetproud;
 
 import com.hazelcast.jet.Job;
+import edu.auth.jetproud.datastructures.mtree.MTreeInsertable;
 import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.context.Proud;
 import edu.auth.jetproud.proud.pipeline.ProudPipeline;
@@ -11,6 +12,8 @@ import edu.auth.jetproud.utils.Tuple;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ApplicationMain {

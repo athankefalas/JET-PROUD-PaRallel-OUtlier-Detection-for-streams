@@ -104,7 +104,7 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                         current = new AdvancedExtendedState(mTree, new HashMap<>());
 
                         for(AdvancedProudData el:elements) {
-                            mTree.add(el);
+                            mTree.addOrCache(el);
                             current.map.put(el.id, el);
                         }
 
@@ -120,16 +120,15 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                                 .collect(Collectors.toList());
 
                         for (AdvancedProudData el:elements) {
-                            current.mTree.add(el);
+                            current.mTree.addOrCache(el);
                             current.map.put(el.id, el);
                         }
                     }
 
                     for (AdvancedProudData el: elements) {
-                        MTree<AdvancedProudData>.Query treeQuery = current.mTree.getNearestByRange(el, r);
+                        List<AdvancedProudData> treeQuery = current.mTree.findNearestInRange(el, r);
 
-                        for (ResultItem<AdvancedProudData> item:treeQuery) {
-                            AdvancedProudData node = item.data;
+                        for (AdvancedProudData node:treeQuery) {
 
                             if (node.id == el.id)
                                 continue;

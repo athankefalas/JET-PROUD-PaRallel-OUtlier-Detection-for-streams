@@ -1,14 +1,11 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
-import com.hazelcast.jet.Traverser;
 import com.hazelcast.jet.Traversers;
-import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
-import edu.auth.jetproud.model.AdvancedProudData;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.model.meta.OutlierMetadata;
@@ -18,7 +15,6 @@ import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
@@ -27,7 +23,6 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<NaiveProudData>
@@ -79,9 +74,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                     .collect(Collectors.toList());
 
             // Evict old elements
-            windowItems = Naive.evict(windowItems, windowStart, windowEnd, slide).stream()
-                    .sorted(Comparator.comparingLong(NaiveProudData::getArrival))
-                    .collect(Collectors.toList());
+            windowItems = Naive.evict(windowItems, windowStart, windowEnd, slide);
 
             Naive naive = new Naive(windowStart, windowEnd, K, R, slide);
 
@@ -91,7 +84,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
             // Traverse all nodes in the window
             for(NaiveProudData currentNode : elements) {
-                naive.refreshList(currentNode, windowItems);
+                naive.updateMetadataOf(currentNode, windowItems);
             }
 
             // Add all non-safe in-liers to the outliers accumulator
@@ -116,9 +109,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                             long windowStart = window.start();
                             long windowEnd = window.end();
 
-                            List<NaiveProudData> elements = window.getValue().stream()
-                                    .sorted(Comparator.comparingLong(NaiveProudData::getArrival))
-                                    .collect(Collectors.toList());
+                            List<NaiveProudData> elements = window.getValue();
 
                             final String METADATA_KEY = "METADATA_"+windowKey;
                             OutlierMetadata<NaiveProudData> current = stateHolder.get(METADATA_KEY);
@@ -175,11 +166,9 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                             int outliers = 0;
 
                             for (NaiveProudData el:current.getOutliers().values()) {
-                                long nnBefore = el.nn_before.stream()
-                                        .filter((it)->it >= windowEnd - w)
-                                        .count();
+                                el.nn_before.removeIf((it)-> it < windowEnd - w);
 
-                                if (nnBefore + el.count_after.get() < k)
+                                if (el.nn_before.size() + el.count_after.get() < k)
                                     outliers++;
                             }
 
@@ -197,7 +186,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             List<NaiveProudData> evictedWindowData = Lists.copyOf(windowData);
 
             evictedWindowData.removeIf((it)-> {
-                return it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide;
+                return it.flag == 1 && it.arrival < windowEnd - slide;
             });
 
             return evictedWindowData;
@@ -218,7 +207,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             this.slide = slide;
         }
 
-        public void refreshList(NaiveProudData node, List<NaiveProudData> nodes) {
+        public void updateMetadataOf(NaiveProudData node, List<NaiveProudData> nodes) {
             if (nodes.isEmpty())
                 return;
 
@@ -253,7 +242,9 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         }
 
         public static NaiveProudData combineElements(NaiveProudData one, NaiveProudData other, int k) {
-            other.nn_before.forEach((it)->one.insert_nn_before(it, k));
+            other.nn_before.forEach((it)-> {
+                one.insert_nn_before(it, k);
+            });
             return one;
         }
 

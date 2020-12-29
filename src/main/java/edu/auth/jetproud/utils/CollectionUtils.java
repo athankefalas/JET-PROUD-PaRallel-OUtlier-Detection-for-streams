@@ -1,6 +1,7 @@
 package edu.auth.jetproud.utils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class CollectionUtils {
 
@@ -27,10 +28,11 @@ public final class CollectionUtils {
 
         while(iterator.hasNext()) {
             T item = iterator.next();
-            if(item.compareTo(min) < 0) {
+
+            if(item.compareTo(min) <= 0) {
                 min = item;
             }
-            if(item.compareTo(max) > 0) {
+            if(item.compareTo(max) >= 0) {
                 max = item;
             }
         }
@@ -46,26 +48,30 @@ public final class CollectionUtils {
      * @return A list with the chosen elements.
      */
     public static <T> List<T> randomSample(Collection<T> collection, int n) {
+        int sampleSize = n;
         Random random = new Random();
 
-        List<T> list = Lists.copyOf(collection);
-        List<T> sample = new ArrayList<>(n);
+        List<T> items = Lists.copyOf(collection);
+        List<Integer> sampleIndices = Lists.make(n);
 
-        while(n > 0  &&  !list.isEmpty()) {
-            int index = random.nextInt(list.size());
-            sample.add(list.get(index));
+        if (sampleSize == 0 || items.isEmpty())
+            return Lists.make();
 
-            int indexLast = list.size() - 1;
-            T last = list.remove(indexLast);
+        if (sampleSize > items.size())
+            sampleSize = items.size();
 
-            if(index < indexLast) {
-                list.set(index, last);
-            }
+        while (sampleIndices.size() < sampleSize) {
+            int index = random.nextInt(items.size());
 
-            n--;
+            if (sampleIndices.contains(index))
+                continue;
+
+            sampleIndices.add(index);
         }
 
-        return sample;
+        return sampleIndices.stream()
+                .map(items::get)
+                .collect(Collectors.toList());
     }
 
 }
