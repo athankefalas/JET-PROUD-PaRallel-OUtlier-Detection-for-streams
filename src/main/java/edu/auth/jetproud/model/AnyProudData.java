@@ -64,17 +64,18 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
 
     @Override
     public int hashCode() {
-        // Auto-generated hashcode
+        // Auto-generated hashcode, this locates the proper object in maps and other DS that
+        // rely on hashcode identity to identify and add / remove objects
         int result = id;
         result = 31 * result + value.hashCode();
         result = 31 * result + dimensions;
         result = 31 * result + (int) (arrival ^ (arrival >>> 32));
         result = 31 * result + flag;
-        //return result;
+        return result;
 
         // Use list hashcode instead, it's the same thing.
         //return Lists.of(value).stream().map(List::hashCode).reduce(0, (a,b)->31 * a + b);
-        return value.hashCode();
+        //return value.hashCode();
     }
 
     @Override
@@ -94,7 +95,7 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
             AnyProudData otherData = (AnyProudData) other;
             return id == otherData.id
                     && dimensions == otherData.dimensions
-                    && value.equals(otherData.value);
+                    && spacialIdentity() == otherData.spacialIdentity();
         } else {
             return super.equals(other);
         }

@@ -134,41 +134,36 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                                 continue;
 
                             if (node.arrival < windowEnd - slide) {
-                                //
-                                AdvancedProudData element = current.map.get(el.id);
-                                AdvancedProudData neighbour = current.map.get(node.id);
 
-                                if (element.flag == 0)
-                                    element.insert_nn_before(neighbour.arrival, k);
+                                if (el.flag == 0)
+                                    current.map.get(el.id).insert_nn_before(node.arrival, k);
 
-                                if (neighbour.flag == 0) {
-                                    neighbour.count_after.addAndGet(1);
+                                if (node.flag == 0) {
+                                    current.map.get(node.id).count_after.addAndGet(1);
 
-                                    if (neighbour.count_after.get() >= k)
-                                        neighbour.safe_inlier.set(true);
+                                    if (current.map.get(node.id).count_after.get() >= k)
+                                        current.map.get(node.id).safe_inlier.set(true);
                                 }
 
                             } else {
-                                AdvancedProudData element = current.map.get(el.id);
 
                                 if (el.flag == 0) {
-                                    element.count_after.addAndGet(1);
+                                    current.map.get(el.id).count_after.addAndGet(1);
 
-                                    if (element.count_after.get() >= k)
-                                        element.safe_inlier.set(true);
+                                    if (current.map.get(el.id).count_after.get() >= k)
+                                        current.map.get(el.id).safe_inlier.set(true);
                                 }
                             }
                         }
                     }
 
                     // Add outliers to accumulator
-
                     int outliersCount = 0;
 
                     for (AdvancedProudData el:current.map.values()) {
                         if (el.flag == 0 && !el.safe_inlier.get()) {
                             long nnBefore = el.nn_before.stream()
-                                    .filter((it)->it >= windowEnd - w)
+                                    .filter((it)->it >= windowStart)
                                     .count();
 
                             if (el.count_after.get() + nnBefore < k)
@@ -177,7 +172,8 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                     }
 
                     // Remove expiring and flagged objects from MTree
-                    List<AdvancedProudData> toRemove = elements.stream()
+                    List<AdvancedProudData> toRemove = window.getValue().stream()
+                            .map(Tuple::getSecond)
                             .filter((el) -> el.arrival < windowStart + slide)
                             .collect(Collectors.toList());
 

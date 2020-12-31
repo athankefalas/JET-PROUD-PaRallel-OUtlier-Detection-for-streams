@@ -15,6 +15,7 @@ import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
 import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
 import edu.auth.jetproud.model.AdvancedProudData;
 import edu.auth.jetproud.model.AnyProudData;
+import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.model.meta.OutlierMetadata;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
@@ -223,8 +224,17 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                             } else {
 
                                 // Remove old elements
-                                current.getOutliers().values()
-                                        .removeIf((el) -> el.arrival < windowEnd - w);
+                                List<Integer> idsToRemove = Lists.make();
+
+                                for (NaiveProudData el: current.getOutliers().values()) {
+                                    if (el.arrival < windowEnd - w) {
+                                        idsToRemove.add(el.id);
+                                    }
+                                }
+
+                                for (Integer id : idsToRemove) {
+                                    current.getOutliers().remove(id);
+                                }
 
                                 // Then insert or combine elements
                                 for (AdvancedProudData el:elements) {
@@ -247,14 +257,15 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                             int outliers = 0;
 
                             for (AdvancedProudData el:current.getOutliers().values()) {
-                                if (!el.safe_inlier.get()) {
-                                    long nnBefore = el.nn_before.stream()
-                                            .filter((it)->it >= windowEnd - w)
-                                            .count();
+                                if (el.safe_inlier.get())
+                                    continue;
 
-                                    if (nnBefore + el.count_after.get() < k)
-                                        outliers++;
-                                }
+                                long nnBefore = el.nn_before.stream()
+                                        .filter((it)->it >= windowEnd - w)
+                                        .count();
+
+                                if (nnBefore + el.count_after.get() < k)
+                                    outliers++;
                             }
 
                             // Return results
@@ -278,8 +289,8 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
         }
 
         public static AdvancedProudData combineOldElements(AdvancedProudData one, AdvancedProudData other, int k) {
-            one.count_after = other.count_after;
-            one.safe_inlier = other.safe_inlier;
+            one.count_after.set(other.count_after.get());
+            one.safe_inlier.set(other.safe_inlier.get());
 
             return one;
         }

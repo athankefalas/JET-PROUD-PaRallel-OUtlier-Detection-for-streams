@@ -725,16 +725,16 @@ public class MTree<DATA extends MTreeInsertable & Serializable> implements Seria
      * @return {@code true} if and only if the object was found.
      */
     public boolean remove(DATA data) {
-        if (root == null) {
-            return false;
-        }
-
         long dataSpacialIdentity = data.spacialIdentity();
 
         if (dataPoints.containsKey(dataSpacialIdentity)) {
             CopyOnWriteArrayList<DATA> items = dataPoints.get(dataSpacialIdentity);
             items.removeIf((it)->it.equals(data));
             dataPoints.put(dataSpacialIdentity, items);
+        }
+
+        if (root == null) {
+            return false;
         }
 
         double distanceToRoot = distanceFunction.calculate(data, root.data);

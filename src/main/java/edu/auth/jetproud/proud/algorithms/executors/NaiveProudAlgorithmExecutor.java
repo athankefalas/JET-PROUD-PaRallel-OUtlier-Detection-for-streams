@@ -20,6 +20,7 @@ import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -111,7 +112,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
                             List<NaiveProudData> elements = window.getValue();
 
-                            final String METADATA_KEY = "METADATA_"+windowKey;
+                            final String METADATA_KEY = "METADATA_" + windowKey;
                             OutlierMetadata<NaiveProudData> current = stateHolder.get(METADATA_KEY);
 
                             // Create / Update state Map
@@ -135,11 +136,18 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                 current.getOutliers().putAll(outliersMap);
                             } else {
 
-                                // Remove expired elements
-                                current.getOutliers().values()
-                                        .removeIf((el) -> {
-                                            return elements.stream().noneMatch((it) -> it.id == el.id);
-                                        });
+                                // Remove expired elements and safe in-liers
+                                List<Integer> idsToRemove = Lists.make();
+
+                                for (NaiveProudData el: current.getOutliers().values()) {
+                                    if (elements.stream().noneMatch((it) -> it.id == el.id)) {
+                                        idsToRemove.add(el.id);
+                                    }
+                                }
+
+                                for (Integer id : idsToRemove) {
+                                    current.getOutliers().remove(id);
+                                }
 
                                 // Combine remaining elements
                                 for(NaiveProudData el: elements) {
@@ -165,11 +173,17 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
 
                             int outliers = 0;
 
-                            for (NaiveProudData el:current.getOutliers().values()) {
-                                el.nn_before.removeIf((it)-> it < windowEnd - w);
+                            List<NaiveProudData> outlierValues = Lists.copyOf(current.getOutliers().values());
 
-                                if (el.nn_before.size() + el.count_after.get() < k)
+                            for (NaiveProudData el:outlierValues) {
+
+                                long neighboursBefore = el.nn_before.stream()
+                                        .filter((it)-> it >= windowEnd - w)
+                                        .count();
+
+                                if (neighboursBefore + el.count_after.get() < k) {
                                     outliers++;
+                                }
                             }
 
                             OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliers);
@@ -186,7 +200,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             List<NaiveProudData> evictedWindowData = Lists.copyOf(windowData);
 
             evictedWindowData.removeIf((it)-> {
-                return it.flag == 1 && it.arrival < windowEnd - slide;
+                return it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide;
             });
 
             return evictedWindowData;
@@ -228,12 +242,12 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                 }
             }
 
-            List<NaiveProudData> active = nodes.stream()
+            List<NaiveProudData> inactive = nodes.stream()
                     .filter((it) -> it.arrival < windowEnd - slide && neighbours.stream().anyMatch((n)->n.id == it.id))
                     .collect(Collectors.toList());
 
             // Add new neighbor to previous nodes
-            for (NaiveProudData neighbour: active) {
+            for (NaiveProudData neighbour: inactive) {
                 neighbour.count_after.addAndGet(1);
 
                 if (neighbour.count_after.get() >= K)
@@ -241,11 +255,13 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             }
         }
 
-        public static NaiveProudData combineElements(NaiveProudData one, NaiveProudData other, int k) {
-            other.nn_before.forEach((it)-> {
-                one.insert_nn_before(it, k);
-            });
-            return one;
+        public static NaiveProudData combineElements(NaiveProudData oldItem, NaiveProudData newItem, int k) {
+
+            for(Long elementTimestamp: newItem.nn_before) {
+                oldItem.insert_nn_before(elementTimestamp, k);
+            }
+
+            return oldItem;
         }
 
     }
