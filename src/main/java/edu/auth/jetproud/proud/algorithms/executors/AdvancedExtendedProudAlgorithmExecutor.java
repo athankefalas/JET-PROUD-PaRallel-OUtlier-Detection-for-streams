@@ -20,8 +20,10 @@ import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
+import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -79,7 +81,14 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
         final double R = outlierQuery.range;
 
         return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, AdvancedExtendedState>create(),
-                (stateHolder, window)->{
+                (stateHolder, window)-> {
+                    // Statistics
+                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
+                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+
+                    slideCounter.incrementAndGet();
+                    long startTime = System.currentTimeMillis();
+
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
 
@@ -184,6 +193,11 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
 
                     // Update state
                     stateHolder.put(STATE_KEY, current);
+
+                    // Statistics
+                    long endTime = System.currentTimeMillis();
+                    long duration = endTime - startTime;
+                    cpuTimeCounter.addAndGet(duration);
 
                     // Return results
                     OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);

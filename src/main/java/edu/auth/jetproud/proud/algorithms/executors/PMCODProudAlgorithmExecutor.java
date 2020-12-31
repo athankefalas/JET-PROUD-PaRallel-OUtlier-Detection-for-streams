@@ -14,8 +14,10 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
+import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
@@ -95,6 +97,13 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
 
         return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, PMCODState>create(),
                 (stateHolder, window) -> {
+                    // Statistics
+                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
+                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+
+                    slideCounter.incrementAndGet();
+                    long startTime = System.currentTimeMillis();
+
                     // Detect outliers and add them to outliers accumulator
                     List<Tuple<Long, OutlierQuery>> outliers = Lists.make();
                     int partition = window.getKey();
@@ -171,6 +180,11 @@ public class PMCODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<McodP
                     // If micro-cluster is needed as part of the distributed state remove the following line
                     //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
+
+                    // Statistics
+                    long endTime = System.currentTimeMillis();
+                    long duration = endTime - startTime;
+                    cpuTimeCounter.addAndGet(duration);
 
                     // Return results
                     return Traversers.traverseIterable(outliers);

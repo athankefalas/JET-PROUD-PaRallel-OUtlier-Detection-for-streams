@@ -1,4 +1,4 @@
-package edu.auth.jetproud.proud.state;
+package edu.auth.jetproud.proud.metrics;
 
 import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.utils.Lazy;

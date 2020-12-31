@@ -15,7 +15,9 @@ import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
+import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -63,6 +65,13 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         final double R = outlierQuery.range;
 
         StreamStage<NaiveProudData> detectedOutliersStage = windowedStage.flatMap((window)->{
+            // Statistics
+            DistributedCounter slideCounter = ProudStatistics.slideCounter();
+            DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+
+            slideCounter.incrementAndGet();
+            long startTime = System.currentTimeMillis();
+
             // Detect outliers and add them to outliers accumulator
             List<NaiveProudData> outliers = Lists.make();
             int partition = window.getKey();
@@ -93,6 +102,11 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                 if (!currentNode.safe_inlier.get())
                     outliers.add(currentNode);
             }
+
+            // Statistics
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            cpuTimeCounter.addAndGet(duration);
 
             return Traversers.traverseIterable(outliers);
         });

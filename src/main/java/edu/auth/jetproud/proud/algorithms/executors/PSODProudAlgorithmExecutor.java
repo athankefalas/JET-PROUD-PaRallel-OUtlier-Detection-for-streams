@@ -15,8 +15,10 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
+import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.ArrayUtils;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
@@ -118,6 +120,13 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
         return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, PSODState>create(),
                 (stateHolder, window) -> {
+                    // Statistics
+                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
+                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+
+                    slideCounter.incrementAndGet();
+                    long startTime = System.currentTimeMillis();
+
                     // Detect outliers and add them to outliers accumulator
                     List<Tuple<Long,OutlierQuery>> outliers = Lists.make();
                     int partition = window.getKey();
@@ -210,7 +219,10 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .forEach(psod::deletePoint);
 
 
-                    //stateHolder.put(STATE_KEY, current);
+                    // Statistics
+                    long endTime = System.currentTimeMillis();
+                    long duration = endTime - startTime;
+                    cpuTimeCounter.addAndGet(duration);
 
                     // Return results
                     return Traversers.traverseIterable(outliers);
@@ -303,6 +315,13 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
         return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, PSODState>create(),
                 (stateHolder, window) -> {
+                    // Statistics
+                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
+                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+
+                    slideCounter.incrementAndGet();
+                    long startTime = System.currentTimeMillis();
+
                     // Detect outliers and add them to outliers accumulator
                     List<Tuple<Long,OutlierQuery>> outliers = Lists.make();
                     int partition = window.getKey();
@@ -433,7 +452,10 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
                             .filter((it)-> it.arrival < windowStart + slide)
                             .forEach(psod::deletePoint);
 
-                    //stateHolder.put(STATE_KEY, current);
+                    // Statistics
+                    long endTime = System.currentTimeMillis();
+                    long duration = endTime - startTime;
+                    cpuTimeCounter.addAndGet(duration);
 
                     // Return results
                     return Traversers.traverseIterable(outliers);

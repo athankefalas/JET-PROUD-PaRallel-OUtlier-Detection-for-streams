@@ -7,7 +7,7 @@ import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.core.JobStatus;
 import com.hazelcast.jet.core.metrics.JobMetrics;
 import edu.auth.jetproud.proud.context.ProudContext;
-import edu.auth.jetproud.proud.state.ProudStatistics;
+import edu.auth.jetproud.proud.metrics.ProudStatistics;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

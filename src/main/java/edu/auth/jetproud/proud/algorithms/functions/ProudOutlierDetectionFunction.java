@@ -7,7 +7,7 @@ import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.distributables.DistributedCounter;
-import edu.auth.jetproud.proud.state.ProudStatistics;
+import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;

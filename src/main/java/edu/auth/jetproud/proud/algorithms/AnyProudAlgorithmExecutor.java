@@ -12,8 +12,9 @@ import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.contracts.ProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
-import edu.auth.jetproud.proud.state.ProudStatistics;
+import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.util.List;
@@ -90,4 +91,22 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
     protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams, algorithm);
     }
+
+
+    void none() {
+        // Statistics
+        DistributedCounter slideCounter = ProudStatistics.slideCounter();
+        DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+
+        slideCounter.incrementAndGet();
+        long startTime = System.currentTimeMillis();
+
+        //////////
+
+        // Statistics
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        cpuTimeCounter.addAndGet(duration);
+    }
+
 }

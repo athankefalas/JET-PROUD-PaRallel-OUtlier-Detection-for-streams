@@ -59,7 +59,6 @@ public abstract class AnyProudSink<T> implements ProudSink<T>
                         item = window.getValue().next();
                     }
 
-                    //System.out.println("EL cnt "+elements.size());
                     OutlierQuery coalesced = elements.stream()
                             .map(Tuple::getSecond)
                             .reduce(new OutlierQuery(0,0,0,0), (res, value)->{

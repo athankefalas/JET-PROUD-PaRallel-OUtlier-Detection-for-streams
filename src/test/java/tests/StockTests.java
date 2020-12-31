@@ -77,7 +77,7 @@ public class StockTests
         CompletableFuture<Void> future = job.getFuture();
 
         long startTime = System.currentTimeMillis();
-        long jobTimeout = 1 * 60 * 1000; // About 6 minutes
+        long jobTimeout = 120 * 60 * 1000; // About 6 minutes
 
         while (!future.isDone() && Math.abs(System.currentTimeMillis() - startTime) <= jobTimeout)
             continue;
