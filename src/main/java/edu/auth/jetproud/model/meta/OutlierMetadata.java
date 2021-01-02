@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class OutlierMetadata<T extends AnyProudData> implements Serializable
 {
-    private ConcurrentHashMap<Integer, T> outliers;
+    private final ConcurrentHashMap<Integer, T> outliers;
 
     public OutlierMetadata() {
         outliers = new ConcurrentHashMap<>();

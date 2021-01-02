@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class NaiveProudData extends AnyProudData
 {
@@ -29,6 +30,17 @@ public class NaiveProudData extends AnyProudData
         count_after = new AtomicInteger(0);
         nn_before = new CopyOnWriteArrayList<>();
         safe_inlier = new AtomicBoolean(false);
+    }
+
+    // Copy @See resources/info/ReferenceIssues for issues related to memory alloc & management in java
+    public NaiveProudData copy() {
+        NaiveProudData data = new NaiveProudData(this);
+        data.flag = flag;
+        data.count_after.set(count_after.get());
+        data.nn_before.addAll(nn_before);
+        data.safe_inlier.set(safe_inlier.get());
+
+        return data;
     }
 
     // Implementation

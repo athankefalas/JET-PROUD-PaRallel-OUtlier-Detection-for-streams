@@ -92,21 +92,4 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams, algorithm);
     }
 
-
-    void none() {
-        // Statistics
-        DistributedCounter slideCounter = ProudStatistics.slideCounter();
-        DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-        slideCounter.incrementAndGet();
-        long startTime = System.currentTimeMillis();
-
-        //////////
-
-        // Statistics
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        cpuTimeCounter.addAndGet(duration);
-    }
-
 }

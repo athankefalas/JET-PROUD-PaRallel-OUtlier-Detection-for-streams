@@ -22,7 +22,7 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
 
     public AnyProudData(int id, List<Double> value, long arrival, int flag) {
         this.id = id;
-        this.value = value;
+        this.value = Lists.copyOf(value);
         this.dimensions = value.size();
         this.arrival = arrival;
         this.flag = flag;

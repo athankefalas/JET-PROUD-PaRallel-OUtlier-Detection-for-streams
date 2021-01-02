@@ -100,7 +100,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             // Add all non-safe in-liers to the outliers accumulator
             for (NaiveProudData currentNode : windowItems) {
                 if (!currentNode.safe_inlier.get())
-                    outliers.add(currentNode);
+                    outliers.add(currentNode.copy()); // @See resources/info/ReferenceIssues
             }
 
             // Statistics
@@ -133,21 +133,18 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                             if(current == null) {
                                 current = new OutlierMetadata<>();
 
-                                HashMap<Integer,NaiveProudData> outliersMap = new HashMap<>();
-
                                 for (NaiveProudData el:elements) {
-                                    NaiveProudData oldElement = outliersMap.getOrDefault(el.id, null);
+                                    NaiveProudData oldElement = current.getOutliers().getOrDefault(el.id, null);
 
                                     if (oldElement == null) {
-                                        outliersMap.put(el.id, el);
+                                        current.getOutliers().put(el.id, el.copy());
                                     } else {
-                                        NaiveProudData combined = Naive.combineElements(oldElement, el, k);
-                                        outliersMap.put(el.id, combined);
+                                        NaiveProudData combined = Naive.combineElements(oldElement.copy(), el.copy(), k);
+                                        current.getOutliers().put(el.id, combined);
                                     }
 
                                 }
 
-                                current.getOutliers().putAll(outliersMap);
                             } else {
 
                                 // Remove expired elements and safe in-liers
@@ -168,13 +165,14 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                     NaiveProudData oldElement = current.getOutliers().getOrDefault(el.id, null);
 
                                     if (oldElement == null) {
-                                        current.getOutliers().put(el.id, el);
+                                        current.getOutliers().put(el.id, el.copy());
                                     } else {
                                         if (el.arrival < windowEnd - slide) {
+                                            oldElement = oldElement.copy();
                                             oldElement.count_after.set(el.count_after.get());
                                             current.getOutliers().put(el.id, oldElement);
                                         } else {
-                                            NaiveProudData combinedValue = Naive.combineElements(oldElement, el, k);
+                                            NaiveProudData combinedValue = Naive.combineElements(oldElement.copy(), el.copy(), k);
                                             current.getOutliers().put(el.id, combinedValue);
                                         }
                                     }
@@ -182,15 +180,14 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                 }
                             }
 
+                            List<NaiveProudData> outlierValues = Lists.copyOf(current.getOutliers().values());
+
                             // Write state
                             stateHolder.put(METADATA_KEY, current);
 
                             int outliers = 0;
 
-                            List<NaiveProudData> outlierValues = Lists.copyOf(current.getOutliers().values());
-
                             for (NaiveProudData el:outlierValues) {
-
                                 long neighboursBefore = el.nn_before.stream()
                                         .filter((it)-> it >= windowEnd - w)
                                         .count();

@@ -221,7 +221,6 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                             .filter((it)-> it.arrival < windowStart + slide)
                             .forEach(sop::deletePoint);
 
-
                     stateHolder.put(STATE_KEY, current);
 
                     // Statistics

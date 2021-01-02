@@ -33,6 +33,10 @@ public class Tuple<E1, E2> implements Map.Entry<E1, E2>, Serializable
         this.second = second;
     }
 
+    public Tuple<E1,E2> copy() {
+        return new Tuple<>(first, second);
+    }
+
     // Entry Impl
 
     public static <K,V> Tuple<K,V> fromEntry(Map.Entry<K,V> entry) {

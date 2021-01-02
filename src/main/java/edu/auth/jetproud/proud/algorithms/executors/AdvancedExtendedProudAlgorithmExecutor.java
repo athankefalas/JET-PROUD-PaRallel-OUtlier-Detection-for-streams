@@ -113,7 +113,7 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                         current = new AdvancedExtendedState(mTree, new HashMap<>());
 
                         for(AdvancedProudData el:elements) {
-                            mTree.addOrCache(el);
+                            current.mTree.addOrCache(el);
                             current.map.put(el.id, el);
                         }
 

@@ -28,6 +28,7 @@ import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
+import edu.auth.jetproud.utils.Utils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -122,71 +123,60 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                     current = new AdvancedState(mTree, new HashMap<>());
 
                     for(AdvancedProudData el:elements) {
-                        mTree.addOrCache(el);
-                        current.map.put(el.id, el);
-                    }
-
-                    // Filter non-expired
-                    elements = elements.stream()
-                            .filter((it)->it.arrival >= windowEnd - slide)
-                            .collect(Collectors.toList());
-
-                } else {
-                    // Filter non-expired
-                    elements = elements.stream()
-                            .filter((it)->it.arrival >= windowEnd - slide)
-                            .collect(Collectors.toList());
-
-                    for (AdvancedProudData el:elements) {
                         current.mTree.addOrCache(el);
                         current.map.put(el.id, el);
                     }
+
+                } else {
+                    AdvancedState finalCurrent = current;
+
+                    // Filter non-expired
+                    elements.stream()
+                            .filter((it)->it.arrival >= windowEnd - slide)
+                            .forEach((el)->{
+                                finalCurrent.mTree.addOrCache(el);
+                                finalCurrent.map.put(el.id, el);
+                            });
                 }
+
+                AdvancedState finalCurrent = current;
 
                 // Get Neighbours
-                for (AdvancedProudData el: elements) {
+                elements.stream()
+                        .filter((p) -> p.arrival >= (windowEnd - slide))
+                        .forEach((el)->{
+                            List<AdvancedProudData> treeQuery = finalCurrent.mTree.findNearestInRange(el, R);
 
-                    List<AdvancedProudData> treeQuery = current.mTree.findNearestInRange(el, R);
+                            for (AdvancedProudData node:treeQuery) {
 
-                    for (AdvancedProudData node:treeQuery) {
-                        
-                        if (node.id == el.id)
-                            continue;
+                                if (node.id == el.id)
+                                    continue;
 
-                        AdvancedProudData element = current.map.get(el.id);
-                        AdvancedProudData neighbour = current.map.get(node.id);
+                                if (node.arrival < windowEnd - slide) {
 
-                        if (node.arrival < windowEnd - slide) {
+                                    finalCurrent.map.get(el.id).insert_nn_before(node.arrival, k);
+                                    finalCurrent.map.get(node.id).count_after.addAndGet(1);
 
-                            element.insert_nn_before(node.arrival, k);
+                                    if (finalCurrent.map.get(node.id).count_after.get() >= k)
+                                        finalCurrent.map.get(node.id).safe_inlier.set(true);
 
-                            // Add explicit neighbour nullability check due to null pointer exception
-                            if (neighbour == null)
-                                neighbour = node;
+                                } else {
 
-                            neighbour.count_after.addAndGet(1);
+                                    if (el.flag == 0) {
+                                        finalCurrent.map.get(el.id).count_after.addAndGet(1);
 
-                            if (neighbour.count_after.get() >= k)
-                                neighbour.safe_inlier.set(true);
-
-                        } else {
-
-                            if (el.flag == 0) {
-                                element.count_after.addAndGet(1);
-
-                                if (element.count_after.get() >= k)
-                                    element.safe_inlier.set(true);
+                                        if (finalCurrent.map.get(el.id).count_after.get() >= k)
+                                            finalCurrent.map.get(el.id).safe_inlier.set(true);
+                                    }
+                                }
                             }
-                        }
-                    }
-
-                }
+                        });
 
                 // Add outliers to accumulator
                 outliers.addAll(current.map.values());
 
                 // Remove expiring and flagged objects from MTree
-                List<AdvancedProudData> toRemove = windowItems.stream()
+                List<AdvancedProudData> toRemove = elements.stream()
                         .filter((el) -> el.arrival < windowStart + slide || el.flag == 1)
                         .collect(Collectors.toList());
 
@@ -240,7 +230,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                 // Remove old elements
                                 List<Integer> idsToRemove = Lists.make();
 
-                                for (NaiveProudData el: current.getOutliers().values()) {
+                                for (AdvancedProudData el: current.getOutliers().values()) {
                                     if (el.arrival < windowEnd - w) {
                                         idsToRemove.add(el.id);
                                     }
@@ -266,11 +256,13 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                 }
                             }
 
+                            List<AdvancedProudData> outlierValues = Lists.copyOf(current.getOutliers().values());
+
                             stateHolder.put(METADATA_KEY, current);
 
                             int outliers = 0;
 
-                            for (AdvancedProudData el:current.getOutliers().values()) {
+                            for (AdvancedProudData el:outlierValues) {
                                 if (el.safe_inlier.get())
                                     continue;
 

@@ -12,9 +12,16 @@ import java.util.List;
 public class UnsafeListStreamOutlierCollector implements StreamOutliersCollector
 {
 
+    public boolean debugReporting = true;
+
     @Override
     public void collect(long windowKey, OutlierQuery query, long outlierCount) {
-        //System.out.println("OUTLIER ==> {"+windowKey+", ("+query+"), "+outlierCount+"}");
+
+        if (debugReporting) {
+            //System.out.print(".");
+            System.out.println("OUTLIERS ==> {"+windowKey+", ("+query+"), "+outlierCount+"}");
+        }
+
         DistributedMap<String, List<Triple<Long, OutlierQuery, Long>>> dItems = new DistributedMap<>("OUT_MAP");
 
         List<Triple<Long, OutlierQuery, Long>> items = dItems.getOrDefault("ITEMS", Lists.make());
