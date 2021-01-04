@@ -153,11 +153,10 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
                     // Remove old points from each lSky
                     current.index.values().forEach((p) -> {
-                        p.lsky.keySet().forEach((l) -> {
-                            List<Tuple<Integer,Long>> value = p.lsky.get(l).stream()
+                        p.lsky.replaceAll((key, value)->{
+                            return value.stream()
                                     .filter((it)->it.second >= windowStart)
                                     .collect(Collectors.toList());
-                            p.lsky.put(l, value);
                         });
                     });
 
@@ -351,11 +350,10 @@ public class PSODProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPr
 
                     // Remove old points from each lSky
                     current.index.values().forEach((p) -> {
-                        p.lsky.keySet().forEach((l) -> {
-                            List<Tuple<Integer,Long>> value = p.lsky.get(l).stream()
+                        p.lsky.replaceAll((key, value)->{
+                            return value.stream()
                                     .filter((it)->it.second >= windowStart)
                                     .collect(Collectors.toList());
-                            p.lsky.put(l, value);
                         });
                     });
 

@@ -502,7 +502,8 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                 if (p.id == el.id)
                     continue;
 
-                double distance = Distances.distanceOf(p, el);
+                double distance = Distances.distanceOf(el, p);
+
                 if (distance <= R_max) {
                     if (!neighbourSkyband(el, p, distance) && distance <= R_min) {
                         break;
@@ -521,7 +522,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
             //Get point lSky
             List<Integer> oldSky = point.lsky.values().stream()
                     .flatMap(Collection::stream)
-                    .sorted(Comparator.comparingLong(Tuple::getSecond))
+                    .sorted(Comparator.comparingLong(Tuple<Integer,Long>::getSecond).reversed())
                     .map(Tuple::getFirst)
                     .distinct()
                     .collect(Collectors.toList());

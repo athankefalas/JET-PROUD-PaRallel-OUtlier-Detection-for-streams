@@ -1,14 +1,11 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
-import com.hazelcast.jet.Traverser;
 import com.hazelcast.jet.Traversers;
-import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.datastructures.mtree.MTree;
-import edu.auth.jetproud.datastructures.mtree.ResultItem;
 import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
 import edu.auth.jetproud.datastructures.mtree.partition.PartitionFunction;
 import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
@@ -16,12 +13,10 @@ import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
 import edu.auth.jetproud.model.AdvancedProudData;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
-import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
-import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
+import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.distributables.DistributedCounter;
-import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
 import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
@@ -29,15 +24,12 @@ import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<AdvancedProudData>
 {
-    public static final String DATA_STATE = "ADVANCED_EXT_DATA_STATE";
 
     public static class AdvancedExtendedState implements Serializable {
         public MTree<AdvancedProudData> mTree;
@@ -144,8 +136,9 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
 
                             if (node.arrival < windowEnd - slide) {
 
-                                if (el.flag == 0)
+                                if (el.flag == 0) {
                                     current.map.get(el.id).insert_nn_before(node.arrival, k);
+                                }
 
                                 if (node.flag == 0) {
                                     current.map.get(node.id).count_after.addAndGet(1);

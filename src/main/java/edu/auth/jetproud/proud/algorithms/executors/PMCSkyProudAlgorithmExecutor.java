@@ -214,11 +214,11 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                                         int y = 0;
 
                                         long count = p.lsky.getOrDefault(i+1, Lists.make()).stream()
-                                                .filter((it)->it.second > windowStart)
+                                                .filter((it)->it.second >= windowStart)
                                                 .count();
 
                                         do {
-                                            if(count >= k_distinct_list.get(y)){ // Inlier for all i
+                                            if(count >= k_distinct_list.get(y)) { // Inlier for all i
                                                 y += 1;
                                             } else {  // Outlier for all y
                                                 for(int z=y; z < k_size; z++){
@@ -227,7 +227,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
                                                 i += 1;
                                                 count += p.lsky.getOrDefault(i+1, Lists.make()).stream()
-                                                        .filter((it)->it.second > windowStart)
+                                                        .filter((it)->it.second >= windowStart)
                                                         .count();
                                             }
 
@@ -525,6 +525,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             K_max = k_max;
         }
 
+        // Checked
         public void checkPoint(McskyProudData el) {
             if (el.lsky.isEmpty() && el.mc == -1) { //It's a new point
                 insertPoint(el);
@@ -537,6 +538,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
         public abstract void updatePoint(McskyProudData el);
 
+        // Checked
         public Map<Integer,Double> findCloseMicroClusters(McskyProudData el) {
             Map<Integer,Double> res = new HashMap<>();
 
@@ -548,21 +550,23 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             return res;
         }
 
+        // Checked
         public void insertToMicroCluster(McskyProudData el, int mc) {
             el.clear(mc);
 
             state.mc.get(mc).points.add(el.id);
-            state.pd.remove(el.id);
+            state.pd.removeIf((it)->it == el.id);
         }
 
+        // Checked
         public void createMicroCluster(McskyProudData el, List<McskyProudData> NC) {
             int mcCounter = state.mcCounter.get();
 
             NC.add(el);
 
-            for (McskyProudData it:NC) {
-                it.clear(mcCounter);
-                state.pd.remove(it.id);
+            for (McskyProudData data:NC) {
+                data.clear(mcCounter);
+                state.pd.removeIf((it)->it==data.id);
             }
 
             List<Integer> NCIds = NC.stream()
@@ -570,8 +574,6 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     .collect(Collectors.toList());
 
             PMCSkyCluster newMC = new PMCSkyCluster(el.value, NCIds);
-
-            assert !state.mc.containsKey(mcCounter);
 
             state.mc.put(mcCounter, newMC);
 
@@ -581,6 +583,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
         public abstract void deletePoint(McskyProudData el);
 
+        // Checked
         public boolean neighbourSkyband(McskyProudData el, McskyProudData neighbour, double distance) {
             int normalizedDistance = normalizeDistance(distance);
 
@@ -603,6 +606,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             return false;
         }
 
+        // Checked
         public int normalizeDistance(double distance) {
             int normalizedDistance = 0;
             int i = 0;
@@ -625,7 +629,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             super(state, window, r_distinct_list, slide, r_min, r_max, k_max);
         }
 
-        @Override
+        @Override // Checked
         public void insertPoint(McskyProudData el) {
             // Find close MCs
             Map<Integer, Double> closeMicroClusters = findCloseMicroClusters(el);
@@ -647,10 +651,11 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
                 // Find the points so far from latest to earliest
                 for(McskyProudData p:items) {
-                    if (p.id == el.id) {
-                        continue;
-                    }
 
+                    if (p.id == el.id)
+                        continue;
+
+                    // Check only the points in PD and close MCs
                     if (closeMicroClusters.containsKey(p.mc) || p.mc == -1) {
                         double distance = Distances.distanceOf(el, p);
 
@@ -666,19 +671,19 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     }
                 }
 
-                if (NC.size() >= K_max) { //Create new MC
+                if (NC.size() >= K_max) { // Create new MC
                     createMicroCluster(el, NC);
                 }
-                else { //Insert in PD
+                else { // Insert in PD
                     state.pd.add(el.id);
                 }
 
             }
         }
 
-        @Override
+        @Override // Checked
         public void updatePoint(McskyProudData el) {
-            //Remove old points from lSky
+            // Remove old points from lSky
             for(Integer key:el.lsky.keySet()) {
                 List<Tuple<Integer, Long>> value = el.lsky.get(key).stream()
                         .filter((it) -> it.second >= window.start)
@@ -687,9 +692,9 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                 el.lsky.put(key, value);
             }
 
-            //Create input
+            // Create input
             List<Integer> oldSky = el.lsky.values().stream().flatMap(Collection::stream)
-                    .sorted(Comparator.comparingLong(Tuple::getSecond))
+                    .sorted(Comparator.comparingLong(Tuple<Integer,Long>::getSecond).reversed())
                     .map(Tuple::getFirst)
                     .collect(Collectors.toList());
 
@@ -757,7 +762,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
             }
         }
 
-        @Override
+        @Override // Checked
         public void deletePoint(McskyProudData el) {
             if (el.mc == -1) { //Delete it from PD
                 state.pd.remove(el.id);
@@ -850,7 +855,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
             //Create input
             List<Integer> oldSky = el.lsky.values().stream().flatMap(Collection::stream)
-                    .sorted(Comparator.comparingLong(Tuple::getSecond))
+                    .sorted(Comparator.comparingLong(Tuple<Integer,Long>::getSecond).reversed())
                     .map(Tuple::getFirst)
                     .collect(Collectors.toList());
 

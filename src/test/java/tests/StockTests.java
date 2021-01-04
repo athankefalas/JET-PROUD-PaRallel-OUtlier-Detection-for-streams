@@ -70,14 +70,13 @@ public class StockTests
         pipeline.readFrom(ProudSource.file(proud, dataSetFile()))
                 .partition()
                 .detectOutliers()
-                //.writeTo(Sinks.logger());
                 .writeTo(ProudSink.collector(proud, collector));
 
         Job job = ProudExecutor.executeJob(pipeline);
         CompletableFuture<Void> future = job.getFuture();
 
         long startTime = System.currentTimeMillis();
-        long jobTimeout = 1 * 60 * 1000; // About 6 minutes
+        long jobTimeout = 100 * 60 * 1000; // About 6 minutes
 
         while (!future.isDone() && Math.abs(System.currentTimeMillis() - startTime) <= jobTimeout)
             continue;

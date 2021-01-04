@@ -19,11 +19,11 @@ public class ProudPrintSink extends AnyProudSink<String>
     @Override
     public String convertResultItem(long key, OutlierQuery query) {
         return key +
-                ";" +
+                ";(" +
                 query.window + "," +
                 query.slide + "," +
                 query.range + "," +
-                query.kNeighbours + "," +
+                query.kNeighbours + ")" +
                 ";" +
                 query.outlierCount;
     }
