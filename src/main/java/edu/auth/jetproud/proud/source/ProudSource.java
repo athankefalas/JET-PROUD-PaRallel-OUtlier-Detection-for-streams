@@ -36,7 +36,7 @@ public interface ProudSource<T extends AnyProudData>
     }
 
     static ProudSource<AnyProudData> file(ProudContext context) {
-        return new ProudFileSource<>(context, ProudFileSource.proudDataParser("&",";"));
+        return new ProudFileSource<>(context, ProudFileSource.proudDataParser("&",","));
     }
 
     static ProudSource<AnyProudData> file(ProudContext context, String fieldDelimiter, String valueDelimiter) {
@@ -44,7 +44,7 @@ public interface ProudSource<T extends AnyProudData>
     }
 
     static ProudSource<AnyProudData> file(ProudContext context, String fileName) {
-        return new ProudFileSource<>(context, fileName, ProudFileSource.proudDataParser("&",";"));
+        return new ProudFileSource<>(context, fileName, ProudFileSource.proudDataParser("&",","));
     }
 
     static ProudSource<AnyProudData> file(ProudContext context, String fileName, String fieldDelimiter, String valueDelimiter) {

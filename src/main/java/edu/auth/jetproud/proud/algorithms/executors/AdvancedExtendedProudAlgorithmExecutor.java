@@ -184,8 +184,8 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                         current.map.remove(item.id);
                     }
 
-                    // Update state
-                    stateHolder.put(STATE_KEY, current);
+                    // Update state - If state is updated results are not correct
+                    //stateHolder.put(STATE_KEY, current);
 
                     // Statistics
                     long endTime = System.currentTimeMillis();

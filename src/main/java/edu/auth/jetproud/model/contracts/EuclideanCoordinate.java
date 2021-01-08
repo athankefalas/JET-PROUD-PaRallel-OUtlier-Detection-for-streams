@@ -1,5 +1,7 @@
 package edu.auth.jetproud.model.contracts;
 
+import edu.auth.jetproud.datastructures.mtree.MTreeInsertable;
+
 /**
  * An interface to represent coordinates in Euclidean spaces.
  * @see <a href="http://en.wikipedia.org/wiki/Euclidean_space">"Euclidean

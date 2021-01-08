@@ -5,63 +5,55 @@ import common.DatasetOutliersTestSet;
 import common.ResourceFiles;
 import common.UnsafeListStreamOutlierCollector;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.context.Proud;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.partitioning.GridPartitioning;
 import edu.auth.jetproud.proud.partitioning.gridresolvers.DefaultGridPartitioners;
-import edu.auth.jetproud.proud.partitioning.gridresolvers.StockGridPartitioner;
 import edu.auth.jetproud.proud.pipeline.ProudPipeline;
 import edu.auth.jetproud.proud.sink.ProudSink;
 import edu.auth.jetproud.proud.source.ProudSource;
 import edu.auth.jetproud.utils.Lists;
-import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.utils.Triple;
 import org.junit.jupiter.api.*;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@DisplayName("Stock Tests")
-public class StockTests
+@DisplayName("TAO Tests")
+public class TAOTests
 {
 
     private GridPartitioning.GridPartitioner gridPartitioner() {
-        return DefaultGridPartitioners.forDatasetNamed("STK");
+        return DefaultGridPartitioners.forDatasetNamed("TAO");
     }
 
     private String dataSetName() {
-        return "stk";
+        return "tao";
     }
 
     private String dataSetFolder() {
-        return "stk";
+        return "tao";
     }
 
     private String dataSetFile() {
-        return "stk_input_300k.txt";
+        return "tao_input_300k.txt";
     }
 
     private String dataTreeInitName() {
-        return "stk_tree_input.txt";
+        return "tao_tree_input.txt";
     }
 
     private String testSetPath() {
-        return "stk/stk_outliers.csv";
+        return "tao/tao_outliers.csv";
     }
 
-    private void testExecuteProud(ProudContext proud) throws Exception {
+    private void testExecuteProud(ProudContext proud) throws Exception  {
         DatasetOutliersTestSet testSet = new DatasetOutliersTestSet(testSetPath());
 
         UnsafeListStreamOutlierCollector collector = new UnsafeListStreamOutlierCollector();
@@ -76,7 +68,7 @@ public class StockTests
         CompletableFuture<Void> future = job.getFuture();
 
         long startTime = System.currentTimeMillis();
-        long jobTimeout = 150 * 60 * 1000; // About 6 minutes
+        long jobTimeout = 8 * 60 * 60 * 1000; // About 6 minutes
 
         while (!future.isDone() && Math.abs(System.currentTimeMillis() - startTime) <= jobTimeout) {
             Thread.sleep(10000);
@@ -144,25 +136,25 @@ public class StockTests
 
     @Order(1)
     @Test
-    @DisplayName("Stock Dataset Exists")
+    @DisplayName("TAO Dataset Exists")
     public void datasetExists() throws Exception {
-        File stockDataset = ResourceFiles.fromPath("stk/stk_input_300k.txt");
-        File stockInitDataset = ResourceFiles.fromPath("stk/stk_tree_input.txt");
+        File taoDataset = ResourceFiles.fromPath("stk/stk_input_300k.txt");
+        File taoInitDataset = ResourceFiles.fromPath("stk/stk_tree_input.txt");
 
-        Assertions.assertNotNull(stockDataset, "Stocks dataset not found.");
-        Assertions.assertNotNull(stockInitDataset, "Tree init file for stocks dataset not found.");
+        Assertions.assertNotNull(taoDataset, "TAO dataset not found.");
+        Assertions.assertNotNull(taoInitDataset, "Tree init file for TAO dataset not found.");
     }
 
     @Order(2)
     @Test
-    @DisplayName("Stock Test Dataset Exists")
+    @DisplayName("TAO Test Dataset Exists")
     public void testDatasetExists() throws Exception {
-        File stockTestDataset = ResourceFiles.fromPath("stk/stk_outliers.csv");
-        Assertions.assertNotNull(stockTestDataset, "Stocks test dataset not found.");
+        File taoTestDataset = ResourceFiles.fromPath("stk/stk_outliers.csv");
+        Assertions.assertNotNull(taoTestDataset, "TAO test dataset not found.");
 
         Assertions.assertDoesNotThrow(()->{
             DatasetOutliersTestSet testSet = new DatasetOutliersTestSet(testSetPath());
-        }, "Stocks test dataset found but not loaded.");
+        }, "TAO test dataset found but not loaded.");
     }
 
     //////////////// Single Query Space
@@ -171,15 +163,15 @@ public class StockTests
 
     @Order(3)
     @Test
-    @DisplayName("Stocks: Naive - Repl") // Last passed on: X
-    public void stocksNaive() throws Exception {
+    @DisplayName("TAO: Naive - Repl") // Last passed on: X
+    public void taoNaive() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
-        //10000,500,0.45,50 (w|s|r|k)
+        //10000,500,1.9,50 (w|s|r|k)
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Naive)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .replicationPartitioned()
@@ -194,14 +186,14 @@ public class StockTests
 
     @Order(4)
     @Test
-    @DisplayName("Stocks: Advanced - Repl") // Last passed on: X
-    public void stocksAdvanced() throws Exception {
+    @DisplayName("TAO: Advanced - Repl") // Last passed on: X
+    public void taoAdvanced() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Advanced)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .replicationPartitioned()
@@ -216,14 +208,14 @@ public class StockTests
 
     @Order(5)
     @Test
-    @DisplayName("Stocks: Advanced Extended - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
-    public void stocksAdvancedExt_Tree() throws Exception {
+    @DisplayName("TAO: Advanced Extended - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
+    public void taoAdvancedExt_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.AdvancedExtended)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -236,14 +228,14 @@ public class StockTests
 
     @Order(6)
     @Test
-    @DisplayName("Stocks: Advanced Extended - Grid") // Last passed on: 6/12/2020 ~ first 14 slides
-    public void stocksAdvancedExt_Grid() throws Exception {
+    @DisplayName("TAO: Advanced Extended - Grid") // Last passed on: 6/12/2020 ~ first 14 slides
+    public void taoAdvancedExt_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.AdvancedExtended)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -258,14 +250,14 @@ public class StockTests
 
     @Order(7)
     @Test
-    @DisplayName("Stocks: Slicing - Tree") // Last passed on: X
-    public void stocksSlicing_Tree() throws Exception {
+    @DisplayName("TAO: Slicing - Tree") // Last passed on: X
+    public void taoSlicing_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Slicing)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -278,14 +270,14 @@ public class StockTests
 
     @Order(8)
     @Test
-    @DisplayName("Stocks: Slicing - Grid") // Last passed on: X
-    public void stocksSlicing_Grid() throws Exception {
+    @DisplayName("TAO: Slicing - Grid") // Last passed on: X
+    public void taoSlicing_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Slicing)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -300,14 +292,14 @@ public class StockTests
 
     @Order(9)
     @Test
-    @DisplayName("Stocks: PMCOD - Tree") // Last passed on: X
-    public void stocksPMCOD_Tree() throws Exception {
+    @DisplayName("TAO: PMCOD - Tree") // Last passed on: X
+    public void taoPMCOD_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCod)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -320,14 +312,14 @@ public class StockTests
 
     @Order(10)
     @Test
-    @DisplayName("Stocks: PMCOD - Grid") // Last passed on: X
-    public void stocksPMCOD_Grid() throws Exception {
+    @DisplayName("TAO: PMCOD - Grid") // Last passed on: X
+    public void taoPMCOD_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCod)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -343,14 +335,14 @@ public class StockTests
 
     @Order(11)
     @Test
-    @DisplayName("Stocks: PMCOD Net - Tree") // Last passed on: X
-    public void stocksPMCODNet_Tree() throws Exception {
+    @DisplayName("TAO: PMCOD Net - Tree") // Last passed on: X
+    public void taoPMCODNet_Tree() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCodNet)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -363,14 +355,14 @@ public class StockTests
 
     @Order(12)
     @Test
-    @DisplayName("Stocks: PMCOD Net - Grid") // Last passed on: X
-    public void stocksPMCODNet_Grid() throws Exception {
+    @DisplayName("TAO: PMCOD Net - Grid") // Last passed on: X
+    public void taoPMCODNet_Grid() throws Exception {
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCodNet)
                 .inSingleSpace()
-                .querying(50,0.45,10000,500)
+                .querying(50,1.9,10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -389,14 +381,14 @@ public class StockTests
 
     @Order(13)
     @Test
-    @DisplayName("Stocks: AMCOD - Tree") // Last passed on: ~
-    public void stocksAMCOD_Tree() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: AMCOD - Tree") // Last passed on: ~
+    public void taoAMCOD_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.AMCod)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50),Lists.of(0.45),10000,500)
+                .querying(Lists.of(50),Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -409,14 +401,14 @@ public class StockTests
 
     @Order(14)
     @Test
-    @DisplayName("Stocks: AMCOD - Grid") // Last passed on: ~
-    public void stocksAMCOD_Grid() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: AMCOD - Grid") // Last passed on: ~
+    public void taoAMCOD_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.AMCod)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50), Lists.of(0.45),10000,500)
+                .querying(Lists.of(50), Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -431,14 +423,14 @@ public class StockTests
 
     @Order(15)
     @Test
-    @DisplayName("Stocks: SOP - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
-    public void stocksSOP_Tree() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: SOP - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
+    public void taoSOP_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Sop)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50),Lists.of(0.45),10000,500)
+                .querying(Lists.of(50),Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -451,14 +443,14 @@ public class StockTests
 
     @Order(16)
     @Test
-    @DisplayName("Stocks: SOP - Grid") // Last passed on: X
-    public void stocksSOP_Grid() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: SOP - Grid") // Last passed on: X
+    public void taoSOP_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Sop)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50), Lists.of(0.45),10000,500)
+                .querying(Lists.of(50), Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -474,14 +466,14 @@ public class StockTests
 
     @Order(17)
     @Test
-    @DisplayName("Stocks: PSOD - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
-    public void stocksPSOD_Tree() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PSOD - Tree") // Last passed on: 6/12/2020 ~ first 14 slides
+    public void taoPSOD_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PSod)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50),Lists.of(0.45),10000,500)
+                .querying(Lists.of(50),Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -494,14 +486,14 @@ public class StockTests
 
     @Order(18)
     @Test
-    @DisplayName("Stocks: PSOD - Grid") // Last passed on: NullPointerException @ PSODProudAlExecutor LN 513 IN addNeighbour
-    public void stocksPSOD_Grid() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PSOD - Grid") // Last passed on: NullPointerException @ PSODProudAlExecutor LN 513 IN addNeighbour
+    public void taoPSOD_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PSod)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50), Lists.of(0.45),10000,500)
+                .querying(Lists.of(50), Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -517,14 +509,14 @@ public class StockTests
 
     @Order(19)
     @Test
-    @DisplayName("Stocks: PMCSky - Tree") // Last passed on: ~
-    public void stocksPMCSky_Tree() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PMCSky - Tree") // Last passed on: ~
+    public void taoPMCSky_Tree() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCSky)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50),Lists.of(0.45),10000,500)
+                .querying(Lists.of(50),Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -537,14 +529,14 @@ public class StockTests
 
     @Order(20)
     @Test
-    @DisplayName("Stocks: PMCSky - Grid") // Last passed on: IndexOBException PMCSkyProudAlgExec LN 714 IN deletePoint
-    public void stocksPMCSky_Grid() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PMCSky - Grid") // Last passed on: IndexOBException PMCSkyProudAlgExec LN 714 IN deletePoint
+    public void taoPMCSky_Grid() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCSky)
                 .inMultiQuerySpace()
-                .querying(Lists.of(50), Lists.of(0.45),10000,500)
+                .querying(Lists.of(50), Lists.of(1.9),10000,500)
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -563,14 +555,14 @@ public class StockTests
 
     @Order(21)
     @Test
-    @DisplayName("Stocks: SOP - Tree - MW") // Last passed on: 6/12/2020 ~ first 14 slides
-    public void stocksSOP_Tree_MW() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: SOP - Tree - MW") // Last passed on: 6/12/2020 ~ first 14 slides
+    public void taoSOP_Tree_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Sop)
                 .inMultiQueryMultiWindowSpace()
-                .querying(Lists.of(50), Lists.of(0.45),Lists.of(10000),Lists.of(500))
+                .querying(Lists.of(50), Lists.of(1.9),Lists.of(10000),Lists.of(500))
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -583,14 +575,14 @@ public class StockTests
 
     @Order(22)
     @Test
-    @DisplayName("Stocks: SOP - Grid - MW") // Last passed on: X
-    public void stocksSOP_Grid_MW() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: SOP - Grid - MW") // Last passed on: X
+    public void taoSOP_Grid_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Sop)
                 .inMultiQueryMultiWindowSpace()
-                .querying(Lists.of(50), Lists.of(0.45),Lists.of(10000),Lists.of(500))
+                .querying(Lists.of(50), Lists.of(1.9),Lists.of(10000),Lists.of(500))
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -606,14 +598,14 @@ public class StockTests
 
     @Order(23)
     @Test
-    @DisplayName("Stocks: PSOD - Tree - MW") // Last passed on: STUCK AFTER SLIDE 1
-    public void stocksPSOD_Tree_MW() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PSOD - Tree - MW") // Last passed on: STUCK AFTER SLIDE 1
+    public void taoPSOD_Tree_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PSod)
                 .inMultiQueryMultiWindowSpace()
-                .querying(Lists.of(50), Lists.of(0.45),Lists.of(10000),Lists.of(500))
+                .querying(Lists.of(50), Lists.of(1.9),Lists.of(10000),Lists.of(500))
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -626,14 +618,14 @@ public class StockTests
 
     @Order(24)
     @Test
-    @DisplayName("Stocks: PSOD - Grid - MW") // Last passed on: NullPointerException PSODProudAlgExec LN 513 addNeighbour
-    public void stocksPSOD_Grid_MW() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PSOD - Grid - MW") // Last passed on: NullPointerException PSODProudAlgExec LN 513 addNeighbour
+    public void taoPSOD_Grid_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PSod)
                 .inMultiQueryMultiWindowSpace()
-                .querying(Lists.of(50), Lists.of(0.45),Lists.of(10000),Lists.of(500))
+                .querying(Lists.of(50), Lists.of(1.9),Lists.of(10000),Lists.of(500))
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())
@@ -649,14 +641,14 @@ public class StockTests
 
     @Order(25)
     @Test
-    @DisplayName("Stocks: PMCSky - Tree - MW") // Last passed on: Index out of bounds EX @ PMCSktProudAlgExec LN 873 IN deleteSmallWindowPoint
-    public void stocksPMCSky_Tree_MW() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PMCSky - Tree - MW") // Last passed on: Index out of bounds EX @ PMCSktProudAlgExec LN 873 IN deleteSmallWindowPoint
+    public void taoPMCSky_Tree_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCSky)
                 .inMultiQueryMultiWindowSpace()
-                .querying(Lists.of(50), Lists.of(0.45),Lists.of(10000),Lists.of(500))
+                .querying(Lists.of(50), Lists.of(1.9),Lists.of(10000),Lists.of(500))
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .treePartitionedUsing(dataTreeInitName())
@@ -669,14 +661,14 @@ public class StockTests
 
     @Order(26)
     @Test
-    @DisplayName("Stocks: PMCSky - Grid - MW") // Last passed on: Index Out of Bounds EX @ LN 873
-    public void stocksPMCSky_Grid_MW() throws Exception { // TODO: Query space params may have to be different
+    @DisplayName("TAO: PMCSky - Grid - MW") // Last passed on: Index Out of Bounds EX @ LN 873
+    public void taoPMCSky_Grid_MW() throws Exception { // TODO: Query space params may have to be different
         String datasetAbsolutePath = ResourceFiles.absolutePathOf(dataSetFolder());
 
         Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCSky)
                 .inMultiQueryMultiWindowSpace()
-                .querying(Lists.of(50), Lists.of(0.45),Lists.of(10000),Lists.of(500))
+                .querying(Lists.of(50), Lists.of(1.9),Lists.of(10000),Lists.of(500))
                 .forDatasetNamed(dataSetName())
                 .locatedIn(datasetAbsolutePath)
                 .gridPartitionedUsing(gridPartitioner())

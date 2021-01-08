@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, Serializable {
 
@@ -116,6 +118,9 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
                 String[] fields = string.split(fieldDelimiter);
                 int id = idParser.parseString(fields[0]);
                 List<Double> value = valueParser.parseString(fields[1]);
+
+                if (value == null || value.stream().allMatch(Objects::isNull))
+                    throw new ParserDeserializationException(fields[1], "List<Double>");
 
                 return new AnyProudData(id, value, id, 0);
             } catch (Exception e) {

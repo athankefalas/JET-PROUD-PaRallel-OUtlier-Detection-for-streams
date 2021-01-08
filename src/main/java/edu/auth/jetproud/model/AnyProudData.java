@@ -66,7 +66,8 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
     public int hashCode() {
         // Auto-generated hashcode, this locates the proper object in maps and other DS that
         // rely on hashcode identity to identify and add / remove objects
-        int result = id;
+        int result = 7;
+        result = 31 * result + id;
         result = 31 * result + value.hashCode();
         result = 31 * result + dimensions;
         result = 31 * result + (int) (arrival ^ (arrival >>> 32));
@@ -95,7 +96,7 @@ public class AnyProudData implements Serializable, Comparable<AnyProudData>, Euc
             AnyProudData otherData = (AnyProudData) other;
             return id == otherData.id
                     && dimensions == otherData.dimensions
-                    && spacialIdentity() == otherData.spacialIdentity();
+                    && value.equals(otherData.value);
         } else {
             return super.equals(other);
         }

@@ -14,7 +14,10 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -649,11 +652,58 @@ public class MTree<DATA extends MTreeInsertable & Serializable> implements Seria
         } else {
             synchronized (this) {
                 CopyOnWriteArrayList<DATA> items = dataPoints.getOrDefault(dataSpacialIdentity, new CopyOnWriteArrayList<>());
-                items.add(data);
+
+                if (items.stream().noneMatch((it)->it.equals(data)))
+                    items.add(data);
 
                 dataPoints.put(dataSpacialIdentity, items);
             }
         }
+    }
+
+    public boolean containsInCache(DATA data) {
+        long dataSpacialIdentity = data.spacialIdentity();
+
+        if (dataPoints.containsKey(dataSpacialIdentity)) {
+            return dataPoints.get(dataSpacialIdentity).stream()
+                    .anyMatch((it)->it.equals(data));
+        }
+
+        return false;
+    }
+
+    public int cachedDataSize() {
+        return dataPoints.values().stream()
+                .map(CopyOnWriteArrayList::size)
+                .reduce(0, Integer::sum);
+    }
+
+    public void forEachCached(BiConsumer<MTree<DATA>, DATA> consumer) {
+        dataPoints.keySet().stream()
+                .forEach((key)->{
+                    CopyOnWriteArrayList<DATA> items = dataPoints.get(key);
+
+                    for (DATA item:items) {
+                        consumer.accept(this, item);
+                    }
+                });
+    }
+
+    public void removeIf(Predicate<DATA> predicate) {
+        List<DATA> toRemove = new LinkedList<>();
+
+        forEachCached((self, data)->{
+            if (predicate.test(data))
+                toRemove.add(data);
+        });
+
+        int oldCount = cachedDataSize();
+
+        for (DATA data:toRemove) {
+            remove(data);
+        }
+
+        assert cachedDataSize() == oldCount - toRemove.size();
     }
 
     /**
@@ -672,12 +722,15 @@ public class MTree<DATA extends MTreeInsertable & Serializable> implements Seria
         for (ResultItem<DATA> item:result) {
             if (item == null || item.data == null)
                 continue;
-            resultIdsList.add(item.data.spacialIdentity());
+
+            if (!resultIdsList.contains(item.data.spacialIdentity()))
+                resultIdsList.add(item.data.spacialIdentity());
         }
 
         return resultIdsList.stream()
                 .map((spacialId)->dataPoints.getOrDefault(spacialId, new CopyOnWriteArrayList<>()))
                 .flatMap(Collection::stream)
+                //.filter((it)->distanceFunction.calculate(queryData, it) <= range)
                 .distinct()
                 .collect(Collectors.toList());
     }
