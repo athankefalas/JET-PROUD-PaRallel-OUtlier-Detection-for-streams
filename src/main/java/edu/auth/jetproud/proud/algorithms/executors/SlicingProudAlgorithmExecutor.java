@@ -18,9 +18,7 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.KeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
-import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -82,12 +80,8 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
         return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, SlicingState>create(),
                 (stateHolder, window) -> {
-                    // Statistics
-                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
-                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-                    slideCounter.incrementAndGet();
-                    long startTime = System.currentTimeMillis();
+                    // Metrics & Statistics
+                    SlideMetricsRecorder metricsRecorder = startRecordingMetrics();
 
                     // Detect outliers and add them to outliers accumulator
                     List<Tuple<Long, OutlierQuery>> outliers = Lists.make();
@@ -212,10 +206,8 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                             .filter((it)->triggeredIds.contains(it.id))
                             .forEach(slicing::triggerPoint);
 
-                    // Statistics
-                    long endTime = System.currentTimeMillis();
-                    long duration = endTime - startTime;
-                    cpuTimeCounter.addAndGet(duration);
+                    // Metrics & Statistics
+                    stopRecordingMetrics(metricsRecorder);
 
                     // Return results
                     return Traversers.traverseIterable(outliers);

@@ -1,5 +1,7 @@
 package edu.auth.jetproud.proud.algorithms;
 
+import com.hazelcast.jet.core.metrics.Metrics;
+import com.hazelcast.jet.core.metrics.Unit;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
@@ -90,6 +92,54 @@ public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implemen
 
     protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, T>>>> windowedStage) throws UnsupportedSpaceException {
         throw new UnsupportedSpaceException(ProudSpaceOption.MultiQueryMultiParamsMultiWindowParams, algorithm);
+    }
+
+    // Statistics - Metrics
+
+    protected static class SlideMetricsRecorder
+    {
+
+        private long startTime = System.currentTimeMillis();
+
+        private void startRecording() {
+            startTime = System.currentTimeMillis();
+
+            // Metrics
+            Metrics.metric("proudSlideCounter", Unit.COUNT).increment();
+
+            // Statistics
+            DistributedCounter slideCounter = ProudStatistics.slideCounter();
+            slideCounter.incrementAndGet();
+        }
+
+        private void stopRecording() {
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+
+            // Statistics
+            DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
+            cpuTimeCounter.addAndGet(duration);
+
+            long avgTimePerSlide = ProudStatistics.cpuTimeCounter().get() / ProudStatistics.slideCounter().get();
+
+            // Metrics
+            Metrics.metric("proudSlideCounter", Unit.COUNT).increment();
+            Metrics.metric("proudTotalCPUTime", Unit.MS).increment(duration);
+            Metrics.metric("proudAverageCPUTimePerSlide", Unit.MS).set(avgTimePerSlide);
+        }
+
+
+    }
+
+    protected SlideMetricsRecorder startRecordingMetrics() {
+        SlideMetricsRecorder metricsRecorder = new SlideMetricsRecorder();
+        metricsRecorder.startRecording();
+
+        return metricsRecorder;
+    }
+
+    protected void stopRecordingMetrics(SlideMetricsRecorder metricsRecorder) {
+        metricsRecorder.stopRecording();
     }
 
 }

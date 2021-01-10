@@ -1,7 +1,6 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
-import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
@@ -14,10 +13,7 @@ import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedCounter;
-import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
-import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
@@ -97,12 +93,8 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
 
         return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, PMCODNetState>create(),
                 (stateHolder, window) -> {
-                    // Statistics
-                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
-                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-                    slideCounter.incrementAndGet();
-                    long startTime = System.currentTimeMillis();
+                    // Metrics & Statistics
+                    SlideMetricsRecorder metricsRecorder = startRecordingMetrics();
 
                     // Detect outliers and add them to outliers accumulator
                     List<Tuple<Long, OutlierQuery>> outliers = Lists.make();
@@ -178,10 +170,8 @@ public class PMCODNetProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mc
                     //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
 
-                    // Statistics
-                    long endTime = System.currentTimeMillis();
-                    long duration = endTime - startTime;
-                    cpuTimeCounter.addAndGet(duration);
+                    // Metrics & Statistics
+                    stopRecordingMetrics(metricsRecorder);
 
                     return Traversers.traverseIterable(outliers);
                 });

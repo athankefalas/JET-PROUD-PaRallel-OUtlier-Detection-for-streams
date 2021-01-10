@@ -730,7 +730,7 @@ public class MTree<DATA extends MTreeInsertable & Serializable> implements Seria
         return resultIdsList.stream()
                 .map((spacialId)->dataPoints.getOrDefault(spacialId, new CopyOnWriteArrayList<>()))
                 .flatMap(Collection::stream)
-                //.filter((it)->distanceFunction.calculate(queryData, it) <= range)
+                .filter((it)->distanceFunction.calculate(queryData, it) <= range)
                 .distinct()
                 .collect(Collectors.toList());
     }

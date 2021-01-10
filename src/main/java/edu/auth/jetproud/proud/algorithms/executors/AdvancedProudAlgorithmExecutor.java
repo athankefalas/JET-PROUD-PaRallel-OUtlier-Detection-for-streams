@@ -1,34 +1,27 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
-import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.datastructures.mtree.MTree;
-import edu.auth.jetproud.datastructures.mtree.ResultItem;
 import edu.auth.jetproud.datastructures.mtree.distance.DistanceFunction;
 import edu.auth.jetproud.datastructures.mtree.partition.PartitionFunction;
 import edu.auth.jetproud.datastructures.mtree.promotion.PromotionFunction;
 import edu.auth.jetproud.datastructures.mtree.split.SplitFunction;
 import edu.auth.jetproud.model.AdvancedProudData;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.model.meta.OutlierMetadata;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedCounter;
-import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
-import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
-import edu.auth.jetproud.utils.Utils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -87,12 +80,8 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
 
         StreamStage<AdvancedProudData> detectedOutliersStage = windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, AdvancedState>create(),
             (stateHolder, window) -> {
-                // Statistics
-                DistributedCounter slideCounter = ProudStatistics.slideCounter();
-                DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-                slideCounter.incrementAndGet();
-                long startTime = System.currentTimeMillis();
+                // Metrics & Statistics
+                SlideMetricsRecorder metricsRecorder = startRecordingMetrics();
 
                 // Detect outliers and add them to outliers accumulator
                 List<AdvancedProudData> outliers = Lists.make();
@@ -188,10 +177,8 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                 // Update state
                 stateHolder.put(STATE_KEY, current);
 
-                // Statistics
-                long endTime = System.currentTimeMillis();
-                long duration = endTime - startTime;
-                cpuTimeCounter.addAndGet(duration);
+                // Metrics & Statistics
+                stopRecordingMetrics(metricsRecorder);
 
                 //Return outliers
                 return Traversers.traverseIterable(outliers);

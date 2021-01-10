@@ -16,12 +16,16 @@ public final class ProudExecutor
         JetInstance jet = Jet.newJetInstance();
         Job job = jet.newJob(pipeline);
 
+        job.getConfig().setStoreMetricsAfterJobCompletion(true);
+
         return new ProudJob(pipeline.proudContext(), jet, job);
     }
 
     public static ProudJob executeJob(ProudPipeline pipeline) {
         JetInstance jet = Jet.newJetInstance();
         Job job = jet.newJob(pipeline.jetPipeline());
+
+        job.getConfig().setStoreMetricsAfterJobCompletion(true);
 
         ProudJob proudJob = new ProudJob(pipeline.proudContext(), jet, job);
         proudJob.join();

@@ -15,16 +15,11 @@ import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
-import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,12 +60,8 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
         final double R = outlierQuery.range;
 
         StreamStage<NaiveProudData> detectedOutliersStage = windowedStage.flatMap((window)->{
-            // Statistics
-            DistributedCounter slideCounter = ProudStatistics.slideCounter();
-            DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-            slideCounter.incrementAndGet();
-            long startTime = System.currentTimeMillis();
+            // Metrics & Statistics
+            SlideMetricsRecorder metricsRecorder = startRecordingMetrics();
 
             // Detect outliers and add them to outliers accumulator
             List<NaiveProudData> outliers = Lists.make();
@@ -104,9 +95,7 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
             }
 
             // Statistics
-            long endTime = System.currentTimeMillis();
-            long duration = endTime - startTime;
-            cpuTimeCounter.addAndGet(duration);
+            stopRecordingMetrics(metricsRecorder);
 
             return Traversers.traverseIterable(outliers);
         });

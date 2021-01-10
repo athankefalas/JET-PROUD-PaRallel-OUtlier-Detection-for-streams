@@ -1,14 +1,12 @@
 package edu.auth.jetproud.proud.algorithms.executors;
 
 import com.hazelcast.jet.Traversers;
-import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.config.ProudConfiguration;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
 import edu.auth.jetproud.model.AnyProudData;
-import edu.auth.jetproud.model.LSKYProudData;
 import edu.auth.jetproud.model.McskyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
@@ -17,10 +15,7 @@ import edu.auth.jetproud.proud.algorithms.Distances;
 import edu.auth.jetproud.proud.algorithms.KeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
-import edu.auth.jetproud.proud.distributables.DistributedCounter;
-import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
-import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.ArrayUtils;
 import edu.auth.jetproud.utils.EuclideanCoordinateList;
 import edu.auth.jetproud.utils.Lists;
@@ -29,7 +24,6 @@ import edu.auth.jetproud.utils.Tuple;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,12 +144,8 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
         return windowedStage.flatMapStateful(()-> KeyedStateHolder.<String, PMCSkyState>create(),
                 (stateHolder,window)-> {
-                    // Statistics
-                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
-                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-                    slideCounter.incrementAndGet();
-                    long startTime = System.currentTimeMillis();
+                    // Metrics & Statistics
+                    SlideMetricsRecorder metricsRecorder = startRecordingMetrics();
 
                     // Detect outliers and add them to outliers accumulator
                     List<Tuple<Long, OutlierQuery>> outliers = Lists.make();
@@ -257,10 +247,8 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
 
-                    // Statistics
-                    long endTime = System.currentTimeMillis();
-                    long duration = endTime - startTime;
-                    cpuTimeCounter.addAndGet(duration);
+                    // Metrics & Statistics
+                    stopRecordingMetrics(metricsRecorder);
 
                     // Return results
                     return Traversers.traverseIterable(outliers);
@@ -346,12 +334,8 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
 
         return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, PMCSkyState>create(),
                 (stateHolder, window) -> {
-                    // Statistics
-                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
-                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-                    slideCounter.incrementAndGet();
-                    long startTime = System.currentTimeMillis();
+                    // Metrics & Statistics
+                    SlideMetricsRecorder metricsRecorder = startRecordingMetrics();
 
                     // Detect outliers and add them to outliers accumulator
                     List<Tuple<Long,OutlierQuery>> outliers = Lists.make();
@@ -493,10 +477,8 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                     //current.mcCounter = new AtomicInteger(1);
                     stateHolder.put(STATE_KEY, current);
 
-                    // Statistics
-                    long endTime = System.currentTimeMillis();
-                    long duration = endTime - startTime;
-                    cpuTimeCounter.addAndGet(duration);
+                    // Metrics & Statistics
+                    stopRecordingMetrics(metricsRecorder);
 
                     return Traversers.traverseIterable(outliers);
                 });

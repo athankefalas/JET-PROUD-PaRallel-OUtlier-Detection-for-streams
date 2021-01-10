@@ -16,9 +16,7 @@ import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.context.ProudContext;
-import edu.auth.jetproud.proud.distributables.DistributedCounter;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
-import edu.auth.jetproud.proud.metrics.ProudStatistics;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Tuple;
 
@@ -74,12 +72,8 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
 
         return windowedStage.flatMapStateful(()->KeyedStateHolder.<String, AdvancedExtendedState>create(),
                 (stateHolder, window)-> {
-                    // Statistics
-                    DistributedCounter slideCounter = ProudStatistics.slideCounter();
-                    DistributedCounter cpuTimeCounter = ProudStatistics.cpuTimeCounter();
-
-                    slideCounter.incrementAndGet();
-                    long startTime = System.currentTimeMillis();
+                    // Metrics & Statistics
+                    SlideMetricsRecorder metricsRecorder = startRecordingMetrics();
 
                     // Detect outliers and add them to outliers accumulator
                     int partition = window.getKey();
@@ -187,10 +181,8 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                     // Update state - If state is updated results are not correct
                     //stateHolder.put(STATE_KEY, current);
 
-                    // Statistics
-                    long endTime = System.currentTimeMillis();
-                    long duration = endTime - startTime;
-                    cpuTimeCounter.addAndGet(duration);
+                    // Metrics & Statistics
+                    stopRecordingMetrics(metricsRecorder);
 
                     // Return results
                     OutlierQuery queryCopy = outlierQuery.withOutlierCount(outliersCount);
