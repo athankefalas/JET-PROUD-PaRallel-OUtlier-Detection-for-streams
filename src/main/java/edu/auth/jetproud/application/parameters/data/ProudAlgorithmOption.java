@@ -10,6 +10,9 @@ import static edu.auth.jetproud.application.parameters.data.ProudSpaceOption.*;
 
 public enum ProudAlgorithmOption {
 
+    // User Defined
+    UserDefined(null, Lists.of(Single, MultiQueryMultiParams, MultiQueryMultiParamsMultiWindowParams)),
+
     // Single Query Space
     Naive("naive"),
     Advanced("advanced"),
@@ -43,6 +46,7 @@ public enum ProudAlgorithmOption {
 
     public static Parser<ProudAlgorithmOption> parser() {
         return (value) -> Arrays.stream(values())
+                .filter((it)->it.value != null)
                 .filter((it)->it.value.equals(value.toLowerCase()))
                 .findFirst()
                 .orElse(null);

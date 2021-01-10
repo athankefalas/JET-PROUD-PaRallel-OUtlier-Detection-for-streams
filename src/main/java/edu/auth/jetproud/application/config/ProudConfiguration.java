@@ -196,7 +196,22 @@ public class ProudConfiguration implements Serializable {
             throw ProudArgumentException.invalid("Algorithm "+algorithm+" does not support query space "+space+".");
         }
 
-        //// Algorithm + Partitioning
+        // Grid partitioning requires a grid partitioning function
+        // if a predefined one cannot be used throw an error
+        if (partitioning == ProudPartitioningOption.Grid) {
+            boolean canUseDefaultGridPartitioner = DefaultGridPartitioners.forDatasetNamed(dataset) != null;
+
+            if (!canUseDefaultGridPartitioner && customGridPartitioner == null) {
+                throw ProudArgumentException.missing("grid partitioning function", "configuration.customGridPartitioner");
+            }
+        }
+
+        // Do not continue with validation as UserDefined algorithm and/or partitioning methods
+        // cannot be validated and will always throw errors.
+        if (algorithm == ProudAlgorithmOption.UserDefined || partitioning == ProudPartitioningOption.UserDefined)
+            return;
+
+        //// Algorithm + Partitioning options match
         List<ProudAlgorithmOption> replicationAlgorithms = Lists.of(ProudAlgorithmOption.Naive, ProudAlgorithmOption.Advanced);
 
         if (replicationAlgorithms.contains(algorithm) && partitioning != ProudPartitioningOption.Replication) {
@@ -212,16 +227,6 @@ public class ProudConfiguration implements Serializable {
         if (partitioning != ProudPartitioningOption.Tree && treeInitialNodeCount != null) {
             // --tree_init REQUIRES partitioning == Tree
             throw ProudArgumentException.invalid("Initial tree node count can not be used with "+partitioning+" partitioning.");
-        }
-
-        // Grid partitioning requires a grid partitioning function
-        // if a predefined one cannot be used throw an error
-        if (partitioning == ProudPartitioningOption.Grid) {
-            boolean canUseDefaultGridPartitioner = DefaultGridPartitioners.forDatasetNamed(dataset) != null;
-
-            if (!canUseDefaultGridPartitioner && customGridPartitioner == null) {
-                throw ProudArgumentException.missing("grid partitioning function", "configuration.customGridPartitioner");
-            }
         }
 
     }

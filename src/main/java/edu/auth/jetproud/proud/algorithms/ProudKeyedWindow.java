@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
-public class KeyedWindow<T extends AnyProudData> implements Serializable
+public class ProudKeyedWindow<T extends AnyProudData> implements Serializable
 {
     public int partition;
 
@@ -16,11 +16,11 @@ public class KeyedWindow<T extends AnyProudData> implements Serializable
 
     public LinkedList<T> data;
 
-    public KeyedWindow(int partition, long start, long end) {
+    public ProudKeyedWindow(int partition, long start, long end) {
         this(partition, start, end, Lists.make());
     }
 
-    public KeyedWindow(int partition, long start, long end, List<T> data) {
+    public ProudKeyedWindow(int partition, long start, long end, List<T> data) {
         this.partition = partition;
         this.start = start;
         this.end = end;
@@ -32,7 +32,7 @@ public class KeyedWindow<T extends AnyProudData> implements Serializable
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        KeyedWindow that = (KeyedWindow) o;
+        ProudKeyedWindow that = (ProudKeyedWindow) o;
 
         if (partition != that.partition) return false;
         if (start != that.start) return false;

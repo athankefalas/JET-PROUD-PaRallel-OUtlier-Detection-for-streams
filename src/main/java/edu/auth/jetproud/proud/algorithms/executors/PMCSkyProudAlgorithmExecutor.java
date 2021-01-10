@@ -12,7 +12,7 @@ import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
-import edu.auth.jetproud.proud.algorithms.KeyedWindow;
+import edu.auth.jetproud.proud.algorithms.ProudKeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
@@ -169,7 +169,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                         stateHolder.put(STATE_KEY, current);
                     }
 
-                    final KeyedWindow<McskyProudData> windowRef = new KeyedWindow<>(partition, windowStart, windowEnd);
+                    final ProudKeyedWindow<McskyProudData> windowRef = new ProudKeyedWindow<>(partition, windowStart, windowEnd);
                     final RK_PMCSky pmcsky = new RK_PMCSky(current, windowRef, R_distinct_list, slide, R_min, R_max, k_max);
 
                     int[][] allQueries = ArrayUtils.multidimensionalWith(0, R_size, k_size);
@@ -359,7 +359,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
                         stateHolder.put(STATE_KEY, current);
                     }
 
-                    final KeyedWindow<McskyProudData> windowRef = new KeyedWindow<>(partition, windowStart, windowEnd);
+                    final ProudKeyedWindow<McskyProudData> windowRef = new ProudKeyedWindow<>(partition, windowStart, windowEnd);
                     final RKWS_PMCSky pmcsky = new RKWS_PMCSky(current, windowRef, R_distinct_list, slide, R_min, R_max, k_max, w_min);
 
                     int[][][] allQueries = ArrayUtils.multidimensionalWith(0, R_size, k_size, W_size);
@@ -487,7 +487,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
     private abstract static class PMCSky implements Serializable
     {
         public PMCSkyState state;
-        public KeyedWindow<McskyProudData> window;
+        public ProudKeyedWindow<McskyProudData> window;
 
         public LinkedList<Double> R_distinct_list;
 
@@ -497,7 +497,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
         public double R_max;
         public int K_max;
 
-        public PMCSky(PMCSkyState state, KeyedWindow<McskyProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_max) {
+        public PMCSky(PMCSkyState state, ProudKeyedWindow<McskyProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_max) {
             this.state = state;
             this.window = window;
             R_distinct_list = new LinkedList<>(r_distinct_list);
@@ -607,7 +607,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
     private final static class RK_PMCSky extends PMCSky
     {
 
-        public RK_PMCSky(PMCSkyState state, KeyedWindow<McskyProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_max) {
+        public RK_PMCSky(PMCSkyState state, ProudKeyedWindow<McskyProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_max) {
             super(state, window, r_distinct_list, slide, r_min, r_max, k_max);
         }
 
@@ -769,7 +769,7 @@ public class PMCSkyProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Mcsk
     {
         public int W_min;
 
-        public RKWS_PMCSky(PMCSkyState state, KeyedWindow<McskyProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_max, int w_min) {
+        public RKWS_PMCSky(PMCSkyState state, ProudKeyedWindow<McskyProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_max, int w_min) {
             super(state, window, r_distinct_list, slide, r_min, r_max, k_max);
             W_min = w_min;
         }

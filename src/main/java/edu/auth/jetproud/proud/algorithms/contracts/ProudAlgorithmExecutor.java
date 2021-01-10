@@ -2,6 +2,7 @@ package edu.auth.jetproud.proud.algorithms.contracts;
 
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.application.parameters.errors.ProudArgumentException;
 import edu.auth.jetproud.exceptions.ProudException;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
@@ -27,6 +28,10 @@ public interface ProudAlgorithmExecutor extends Serializable
         ProudAlgorithmOption algorithmOption = proudContext.configuration().getAlgorithm();
 
         switch (algorithmOption) {
+            case UserDefined:
+                throw ExceptionUtils.sneaky(
+                        ProudArgumentException.invalid("A User Defined algorithm cannot be auto detected.")
+                );
             case Naive:
                 return new NaiveProudAlgorithmExecutor(proudContext);
             case Advanced:

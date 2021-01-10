@@ -1,5 +1,6 @@
 package edu.auth.jetproud.proud.streamstage;
 
+import com.hazelcast.function.BiConsumerEx;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.application.parameters.data.ProudPartitioningOption;
 import edu.auth.jetproud.application.parameters.errors.ProudArgumentException;
@@ -9,6 +10,9 @@ import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.extension.AnyProudJetClassExtender;
 import edu.auth.jetproud.proud.extension.proxy.ProxyExtension;
 import edu.auth.jetproud.proud.partitioning.*;
+import edu.auth.jetproud.proud.partitioning.custom.CustomFunctionProudPartitioning;
+import edu.auth.jetproud.proud.partitioning.custom.PartitioningState;
+import edu.auth.jetproud.proud.partitioning.custom.UserDefinedProudPartitioning;
 import edu.auth.jetproud.proud.partitioning.gridresolvers.DefaultGridPartitioners;
 import edu.auth.jetproud.utils.ExceptionUtils;
 
@@ -30,6 +34,10 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
         String dataset;
 
         switch (partitioningOption) {
+            case UserDefined:
+                throw ExceptionUtils.sneaky(
+                        ProudArgumentException.invalid("Auto partitioning is not compatible with a User Defined partitioning method.")
+                );
             case Replication:
                 return new ReplicationPartitioning(proudContext);
             case Grid:
@@ -79,6 +87,26 @@ public class ProudStreamStageExtender<T extends AnyProudData> extends AnyProudJe
     @Override
     public ProudPartitionedStreamStage<AnyProudData> partition() throws Exception {
         final ProudPartitioning proudPartitioning = createProudPartitioning();
+
+        StreamStage<PartitionedData<AnyProudData>> jetStreamStage = target.flatMap(proudPartitioning::jetPartition);
+        return (ProudPartitionedStreamStage<AnyProudData>) ProxyExtension.of(jetStreamStage,
+                ProudPartitionedStreamStage.class,
+                new ProudPartitionedStreamStageExtender<AnyProudData>(proudContext)
+        );
+    }
+
+    @Override
+    public ProudPartitionedStreamStage<AnyProudData> partition(UserDefinedProudPartitioning proudPartitioning) throws Exception {
+        StreamStage<PartitionedData<AnyProudData>> jetStreamStage = target.flatMap(proudPartitioning::jetPartition);
+        return (ProudPartitionedStreamStage<AnyProudData>) ProxyExtension.of(jetStreamStage,
+                ProudPartitionedStreamStage.class,
+                new ProudPartitionedStreamStageExtender<AnyProudData>(proudContext)
+        );
+    }
+
+    @Override
+    public ProudPartitionedStreamStage<AnyProudData> partition(BiConsumerEx<AnyProudData, PartitioningState> partitionFunction) throws Exception {
+        ProudPartitioning proudPartitioning = new CustomFunctionProudPartitioning(proudContext, partitionFunction);
 
         StreamStage<PartitionedData<AnyProudData>> jetStreamStage = target.flatMap(proudPartitioning::jetPartition);
         return (ProudPartitionedStreamStage<AnyProudData>) ProxyExtension.of(jetStreamStage,

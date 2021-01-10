@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 public enum ProudPartitioningOption
 {
+    UserDefined(null),
     Replication("replication"),
     Grid("grid"),
     Tree("tree");
@@ -19,6 +20,7 @@ public enum ProudPartitioningOption
 
     public static Parser<ProudPartitioningOption> parser() {
         return (value) -> Arrays.stream(values())
+                .filter((it)->it.value != null)
                 .filter((it)->it.value.equals(value.toLowerCase()))
                 .findFirst()
                 .orElse(null);

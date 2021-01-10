@@ -12,7 +12,7 @@ import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
 import edu.auth.jetproud.proud.algorithms.Distances;
-import edu.auth.jetproud.proud.algorithms.KeyedWindow;
+import edu.auth.jetproud.proud.algorithms.ProudKeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
@@ -139,7 +139,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                         stateHolder.put(STATE_KEY, current);
                     }
 
-                    final KeyedWindow<LSKYProudData> windowRef = new KeyedWindow<>(partition, windowStart, windowEnd, elements);
+                    final ProudKeyedWindow<LSKYProudData> windowRef = new ProudKeyedWindow<>(partition, windowStart, windowEnd, elements);
                     final SOP sop = new SOP(current, windowRef, R_distinct_list, slide, R_min, R_max, k_min, k_max);
 
                     int[][] allQueries = ArrayUtils.multidimensionalWith(0, R_size, k_size);
@@ -326,7 +326,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
                         stateHolder.put(STATE_KEY, current);
                     }
 
-                    final KeyedWindow<LSKYProudData> windowRef = new KeyedWindow<>(partition, windowStart, windowEnd, elements);
+                    final ProudKeyedWindow<LSKYProudData> windowRef = new ProudKeyedWindow<>(partition, windowStart, windowEnd, elements);
                     final SOP sop = new SOP(current, windowRef, R_distinct_list, slide, R_min, R_max, k_min, k_max);
 
                     List<Integer> output_slide = Lists.make();
@@ -444,7 +444,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
     private static final class SOP implements Serializable
     {
         public SOPState state;
-        public KeyedWindow<LSKYProudData> window;
+        public ProudKeyedWindow<LSKYProudData> window;
 
         public LinkedList<Double> R_distinct_list;
 
@@ -455,7 +455,7 @@ public class SOPProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<LSKYPro
         public int K_min;
         public int K_max;
 
-        public SOP(SOPState state, KeyedWindow<LSKYProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_min, int k_max) {
+        public SOP(SOPState state, ProudKeyedWindow<LSKYProudData> window, List<Double> r_distinct_list, int slide, double r_min, double r_max, int k_min, int k_max) {
             this.state = state;
             this.window = window;
 

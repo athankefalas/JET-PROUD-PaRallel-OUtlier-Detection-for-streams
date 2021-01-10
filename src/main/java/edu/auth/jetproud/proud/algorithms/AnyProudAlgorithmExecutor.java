@@ -23,9 +23,6 @@ import java.util.List;
 
 public abstract class AnyProudAlgorithmExecutor<T extends AnyProudData> implements ProudAlgorithmExecutor
 {
-    public static final String SLIDE_COUNTER = "SLIDE_COUNTER";
-    public static final String CPU_TIME_COUNTER = "CPU_TIME_COUNTER";
-
     protected final ProudContext proudContext;
     protected final ProudAlgorithmOption algorithm;
 

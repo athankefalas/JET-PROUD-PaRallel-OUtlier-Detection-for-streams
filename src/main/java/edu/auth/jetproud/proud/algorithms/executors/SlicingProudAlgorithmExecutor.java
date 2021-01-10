@@ -15,7 +15,7 @@ import edu.auth.jetproud.model.SlicingProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.algorithms.AnyProudAlgorithmExecutor;
-import edu.auth.jetproud.proud.algorithms.KeyedWindow;
+import edu.auth.jetproud.proud.algorithms.ProudKeyedWindow;
 import edu.auth.jetproud.proud.algorithms.exceptions.UnsupportedSpaceException;
 import edu.auth.jetproud.proud.algorithms.functions.ProudComponentBuilder;
 import edu.auth.jetproud.proud.distributables.KeyedStateHolder;
@@ -146,7 +146,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                         current.trees.put(latestSlide, mTree);
                     }
 
-                    KeyedWindow<SlicingProudData> windowRef = new KeyedWindow<>(partition, windowStart, windowEnd, elements);
+                    ProudKeyedWindow<SlicingProudData> windowRef = new ProudKeyedWindow<>(partition, windowStart, windowEnd, elements);
                     final Slicing slicing = new Slicing(windowRef, outlierQuery, current);
 
                     //Trigger leftover slides
@@ -216,11 +216,11 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
 
     private static class Slicing implements Serializable
     {
-        public KeyedWindow<SlicingProudData> window;
+        public ProudKeyedWindow<SlicingProudData> window;
         public OutlierQuery query;
         public SlicingState state;
 
-        public Slicing(KeyedWindow<SlicingProudData> window, OutlierQuery query, SlicingState state) {
+        public Slicing(ProudKeyedWindow<SlicingProudData> window, OutlierQuery query, SlicingState state) {
             this.window = window;
             this.query = query;
             this.state = state;

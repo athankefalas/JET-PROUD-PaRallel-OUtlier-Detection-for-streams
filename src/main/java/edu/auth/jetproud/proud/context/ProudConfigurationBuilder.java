@@ -155,10 +155,10 @@ public class ProudConfigurationBuilder
 
     // Partitioning
 
+
     @Override
-    public OutputSelectionProudConfigBuilder gridPartitionedUsing(GridPartitioning.GridPartitioner gridPartitioner) {
-        proudConfiguration.setPartitioning(ProudPartitioningOption.Grid);
-        proudConfiguration.setCustomGridPartitioner(gridPartitioner);
+    public OutputSelectionProudConfigBuilder userDefinedPartitioning() {
+        proudConfiguration.setPartitioning(ProudPartitioningOption.UserDefined);
         return this;
     }
 
@@ -175,6 +175,14 @@ public class ProudConfigurationBuilder
         this.treeInitFileName = initialNodeFile;
         return this;
     }
+
+    @Override
+    public OutputSelectionProudConfigBuilder gridPartitionedUsing(GridPartitioning.GridPartitioner gridPartitioner) {
+        proudConfiguration.setPartitioning(ProudPartitioningOption.Grid);
+        proudConfiguration.setCustomGridPartitioner(gridPartitioner);
+        return this;
+    }
+
 
     // Output
 
