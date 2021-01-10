@@ -29,7 +29,7 @@ public class ProudPipelineExtender extends AnyProudJetClassExtender<Pipeline> im
 
     @Override
     public ProudStreamStage<AnyProudData> readFrom(ProudSource<AnyProudData> source) {
-        StreamStage<AnyProudData> jetStreamStage = source.readInto(target);//.peek();
+        StreamStage<AnyProudData> jetStreamStage = source.readInto(target);
 
         return (ProudStreamStage<AnyProudData>) ProxyExtension.of(jetStreamStage, ProudStreamStage.class, new ProudStreamStageExtender<AnyProudData>(proudContext));
     }

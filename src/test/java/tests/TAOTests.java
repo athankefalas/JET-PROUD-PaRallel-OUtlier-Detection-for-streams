@@ -1,10 +1,12 @@
 package tests;
 
 import com.hazelcast.jet.Job;
+import com.hazelcast.jet.pipeline.StreamStage;
 import common.DatasetOutliersTestSet;
 import common.ResourceFiles;
 import common.UnsafeListStreamOutlierCollector;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+import edu.auth.jetproud.model.contracts.ProudDataConvertible;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.context.Proud;
