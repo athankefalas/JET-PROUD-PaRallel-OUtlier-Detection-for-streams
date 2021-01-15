@@ -2,7 +2,10 @@ package edu.auth.jetproud.model;
 
 import edu.auth.jetproud.utils.Lists;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,11 +13,13 @@ import java.util.stream.Collectors;
 
 public class NaiveProudData extends AnyProudData
 {
+    public UUID uuid = UUID.randomUUID();
+
     //Neighbor data
-    public AtomicInteger count_after;
-    public CopyOnWriteArrayList<Long> nn_before;
+    public int count_after;
+    public ArrayList<Long> nn_before;
     // Skip flag
-    public AtomicBoolean safe_inlier;
+    public boolean safe_inlier;
 
     public NaiveProudData(AnyProudData point) {
         super(point);
@@ -27,18 +32,18 @@ public class NaiveProudData extends AnyProudData
     }
 
     private void postInit() {
-        count_after = new AtomicInteger(0);
-        nn_before = new CopyOnWriteArrayList<>();
-        safe_inlier = new AtomicBoolean(false);
+        count_after = 0;
+        nn_before = new ArrayList<>();
+        safe_inlier = false;
     }
 
     // Copy @See resources/info/ReferenceIssues for issues related to memory alloc & management in java
     public NaiveProudData copy() {
         NaiveProudData data = new NaiveProudData(this);
         data.flag = flag;
-        data.count_after.set(count_after.get());
+        data.count_after = count_after;
         data.nn_before.addAll(nn_before);
-        data.safe_inlier.set(safe_inlier.get());
+        data.safe_inlier = safe_inlier;
 
         return data;
     }
@@ -52,12 +57,14 @@ public class NaiveProudData extends AnyProudData
     //Function to insert data as a preceding neighbor (max k neighbors)
     public void insert_nn_before(long el, int k) {
         if (k != 0 && nn_before.size() == k) {
-            long min = nn_before.stream()
+            Long min = nn_before.stream()
                     .min(Long::compareTo)
-                    .orElse(0L);
+                    .orElse(null);
+
+            assert min != null;
 
             if (el > min) {
-                nn_before.removeIf((it)->it == min);
+                nn_before.remove(min);
                 nn_before.add(el);
             }
 
@@ -80,7 +87,7 @@ public class NaiveProudData extends AnyProudData
     // Clear Variables
     public void clear(int newMc) {
         nn_before.clear();
-        count_after.set(0);
+        count_after = 0;
     }
 
 

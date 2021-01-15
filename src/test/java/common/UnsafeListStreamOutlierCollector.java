@@ -12,7 +12,7 @@ import java.util.List;
 public class UnsafeListStreamOutlierCollector implements StreamOutliersCollector
 {
 
-    public boolean debugReporting = false;
+    public boolean debugReporting = true;
 
     @Override
     public void collect(long windowKey, OutlierQuery query, long outlierCount) {

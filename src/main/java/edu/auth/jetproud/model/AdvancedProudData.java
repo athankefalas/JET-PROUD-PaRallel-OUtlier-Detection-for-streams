@@ -16,9 +16,9 @@ public class AdvancedProudData extends NaiveProudData {
     public AdvancedProudData copy() {
         AdvancedProudData data = new AdvancedProudData(this);
         data.flag = flag;
-        data.count_after.set(count_after.get());
+        data.count_after = count_after;
         data.nn_before.addAll(nn_before);
-        data.safe_inlier.set(safe_inlier.get());
+        data.safe_inlier = safe_inlier;
 
         return data;
     }

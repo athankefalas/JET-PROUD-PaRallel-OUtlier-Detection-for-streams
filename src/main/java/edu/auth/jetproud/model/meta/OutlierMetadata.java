@@ -8,23 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class OutlierMetadata<T extends AnyProudData> implements Serializable
+public class OutlierMetadata<T extends AnyProudData> extends HashMap<Integer,T> implements Serializable
 {
-    private final ConcurrentHashMap<Integer, T> outliers;
 
     public OutlierMetadata() {
-        outliers = new ConcurrentHashMap<>();
+        super();
     }
 
-    public OutlierMetadata(Map<Integer, T> outliers) {
-        this.outliers = new ConcurrentHashMap<>(outliers);
-    }
-
-    public Map<Integer, T> getOutliers() {
-        return outliers;
-    }
-
-    public OutlierMetadata<T> copy() {
-        return new OutlierMetadata<>(outliers);
+    public OutlierMetadata(Map<? extends Integer, ? extends T> m) {
+        super(m);
     }
 }

@@ -25,6 +25,10 @@ public class ReplicationPartitioning implements ProudPartitioning
         this.partitionsCount = partitionsCount;
     }
 
+    public ReplicationPartitioning(int partitionsCount) {
+        this.partitionsCount = partitionsCount;
+    }
+
     @Override
     public List<PartitionedData<AnyProudData>> partition(AnyProudData dataPoint) {
         List<PartitionedData<AnyProudData>> dataPartitions = Lists.make();
@@ -32,7 +36,7 @@ public class ReplicationPartitioning implements ProudPartitioning
         for (int p=0; p < partitionsCount; p++) {
             if (dataPoint.id % partitionsCount == p) {
                 AnyProudData dataPointCopy = new AnyProudData(dataPoint.id, dataPoint.value, dataPoint.arrival,  0);
-                PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(p, dataPointCopy);
+                PartitionedData<AnyProudData> partitionedData = new PartitionedData<>(p, dataPoint);
 
                 dataPartitions.add(partitionedData);
             } else {

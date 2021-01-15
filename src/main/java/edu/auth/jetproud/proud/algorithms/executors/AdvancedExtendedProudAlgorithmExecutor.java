@@ -135,19 +135,19 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                                 }
 
                                 if (node.flag == 0) {
-                                    current.map.get(node.id).count_after.addAndGet(1);
+                                    current.map.get(node.id).count_after++;
 
-                                    if (current.map.get(node.id).count_after.get() >= k)
-                                        current.map.get(node.id).safe_inlier.set(true);
+                                    if (current.map.get(node.id).count_after >= k)
+                                        current.map.get(node.id).safe_inlier = true;
                                 }
 
                             } else {
 
                                 if (el.flag == 0) {
-                                    current.map.get(el.id).count_after.addAndGet(1);
+                                    current.map.get(el.id).count_after++;
 
-                                    if (current.map.get(el.id).count_after.get() >= k)
-                                        current.map.get(el.id).safe_inlier.set(true);
+                                    if (current.map.get(el.id).count_after >= k)
+                                        current.map.get(el.id).safe_inlier = true;
                                 }
                             }
                         }
@@ -157,12 +157,12 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                     int outliersCount = 0;
 
                     for (AdvancedProudData el:current.map.values()) {
-                        if (el.flag == 0 && !el.safe_inlier.get()) {
+                        if (el.flag == 0 && !el.safe_inlier) {
                             long nnBefore = el.nn_before.stream()
                                     .filter((it)->it >= windowStart)
                                     .count();
 
-                            if (el.count_after.get() + nnBefore < k)
+                            if (el.count_after + nnBefore < k)
                                 outliersCount++;
                         }
                     }

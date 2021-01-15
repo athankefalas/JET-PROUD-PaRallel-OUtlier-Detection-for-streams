@@ -144,18 +144,18 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                 if (node.arrival < windowEnd - slide) {
 
                                     finalCurrent.map.get(el.id).insert_nn_before(node.arrival, k);
-                                    finalCurrent.map.get(node.id).count_after.addAndGet(1);
+                                    finalCurrent.map.get(node.id).count_after++;
 
-                                    if (finalCurrent.map.get(node.id).count_after.get() >= k)
-                                        finalCurrent.map.get(node.id).safe_inlier.set(true);
+                                    if (finalCurrent.map.get(node.id).count_after >= k)
+                                        finalCurrent.map.get(node.id).safe_inlier = true;
 
                                 } else {
 
                                     if (el.flag == 0) {
-                                        finalCurrent.map.get(el.id).count_after.addAndGet(1);
+                                        finalCurrent.map.get(el.id).count_after++;
 
-                                        if (finalCurrent.map.get(el.id).count_after.get() >= k)
-                                            finalCurrent.map.get(el.id).safe_inlier.set(true);
+                                        if (finalCurrent.map.get(el.id).count_after >= k)
+                                            finalCurrent.map.get(el.id).safe_inlier = true;
                                     }
                                 }
                             }
@@ -217,47 +217,47 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                                 // Remove old elements
                                 List<Integer> idsToRemove = Lists.make();
 
-                                for (AdvancedProudData el: current.getOutliers().values()) {
+                                for (AdvancedProudData el: current.values()) {
                                     if (el.arrival < windowEnd - w) {
                                         idsToRemove.add(el.id);
                                     }
                                 }
 
                                 for (Integer id : idsToRemove) {
-                                    current.getOutliers().remove(id);
+                                    current.remove(id);
                                 }
 
                                 // Then insert or combine elements
                                 for (AdvancedProudData el:elements) {
-                                    AdvancedProudData oldEl = current.getOutliers().getOrDefault(el.id, null);
+                                    AdvancedProudData oldEl = current.getOrDefault(el.id, null);
 
                                     if (el.arrival >= windowEnd - slide) {
                                         AdvancedProudData newValue = Advanced.combineNewElements(oldEl, el, k);
-                                        current.getOutliers().put(el.id, newValue);
+                                        current.put(el.id, newValue);
                                     } else {
                                         if (oldEl != null) {
                                             AdvancedProudData newValue = Advanced.combineOldElements(oldEl, el, k);
-                                            current.getOutliers().put(el.id, newValue);
+                                            current.put(el.id, newValue);
                                         }
                                     }
                                 }
                             }
 
-                            List<AdvancedProudData> outlierValues = Lists.copyOf(current.getOutliers().values());
+                            List<AdvancedProudData> outlierValues = Lists.copyOf(current.values());
 
                             stateHolder.put(METADATA_KEY, current);
 
                             int outliers = 0;
 
                             for (AdvancedProudData el:outlierValues) {
-                                if (el.safe_inlier.get())
+                                if (el.safe_inlier)
                                     continue;
 
                                 long nnBefore = el.nn_before.stream()
                                         .filter((it)->it >= windowEnd - w)
                                         .count();
 
-                                if (nnBefore + el.count_after.get() < k)
+                                if (nnBefore + el.count_after < k)
                                     outliers++;
                             }
 
@@ -282,8 +282,8 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
         }
 
         public static AdvancedProudData combineOldElements(AdvancedProudData one, AdvancedProudData other, int k) {
-            one.count_after.set(other.count_after.get());
-            one.safe_inlier.set(other.safe_inlier.get());
+            one.count_after = other.count_after;
+            one.safe_inlier = other.safe_inlier;
 
             return one;
         }

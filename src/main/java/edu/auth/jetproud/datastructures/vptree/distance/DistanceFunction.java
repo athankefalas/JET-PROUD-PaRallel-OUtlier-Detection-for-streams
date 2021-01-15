@@ -51,7 +51,7 @@ public interface DistanceFunction<T> extends Serializable {
 
             for(int d = 0; d < dimensions; d++) {
                 double diff = data1.get(d) - data2.get(d);
-                dimensionDeltaSquaredSum += diff * diff;
+                dimensionDeltaSquaredSum += Math.pow(diff, 2.0);
             }
 
             return Math.sqrt(dimensionDeltaSquaredSum);

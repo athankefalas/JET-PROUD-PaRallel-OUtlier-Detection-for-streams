@@ -6,18 +6,20 @@ import com.hazelcast.jet.pipeline.test.TestSources;
 import edu.auth.jetproud.exceptions.ParserDeserializationException;
 import edu.auth.jetproud.exceptions.ProudException;
 import edu.auth.jetproud.proud.distributables.DistributedMap;
+import edu.auth.jetproud.proud.partitioning.PartitionedData;
+import edu.auth.jetproud.proud.partitioning.ProudPartitioning;
+import edu.auth.jetproud.proud.partitioning.ReplicationPartitioning;
 import edu.auth.jetproud.utils.ExceptionUtils;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.context.ProudContext;
+import edu.auth.jetproud.utils.Tuple;
 
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, Serializable {
@@ -132,7 +134,7 @@ public class ProudFileSource<T extends AnyProudData> implements ProudSource<T>, 
     //// Contexts
 
     private static class ListItemsContext<T extends AnyProudData> implements Serializable {
-        private static final int BATCH_SIZE = 1024;
+        private static final int BATCH_SIZE = 2048;
 
         private Processor.Context processorContext;
         private LinkedList<T> items;
