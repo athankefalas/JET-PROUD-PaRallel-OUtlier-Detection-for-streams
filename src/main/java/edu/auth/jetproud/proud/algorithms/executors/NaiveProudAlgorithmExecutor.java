@@ -88,20 +88,13 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                 naive.updateMetadataOf(currentNode, windowItems);
             }
 
-            NaiveProudData match = windowItems.stream()
-                    .filter((it)->it.id==108)
-                    .findFirst().orElse(null);
-
-            if (match != null) {
-                //System.out.println("XXXXX     WE:"+(windowEnd-slide));
-            }
-
             // Add all non-safe in-liers to the outliers accumulator
             for (NaiveProudData currentNode : windowItems) {
                 if (!currentNode.safe_inlier) {
-
+                    // When flag == 0 pass a copy because the next slide will
+                    // change count_after and too few outliers are reported
                     if (currentNode.flag == 0)
-                        outliers.add(currentNode.copy()); // @See resources/info/ReferenceIssues
+                        outliers.add(currentNode.copy());
                     else
                         outliers.add(currentNode);
                 }
@@ -170,7 +163,9 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
                                         current.put(el.id, el.copy());
                                     } else {
                                         if (el.arrival < windowEnd - slide) {
-                                            //oldElement = oldElement.copy();
+                                            // Use a copy of oldElement because when used by reference
+                                            // count_after and nn_before are altered from other slides
+                                            oldElement = oldElement.copy();
                                             oldElement.count_after = el.count_after;
                                             current.put(el.id, oldElement);
                                         } else {
