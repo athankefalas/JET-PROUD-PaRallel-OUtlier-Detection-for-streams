@@ -162,7 +162,10 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                         });
 
                 // Add outliers to accumulator
-                outliers.addAll(current.map.values());
+                outliers.addAll(current.map.values().stream()
+                        .map(AdvancedProudData::copy)
+                        .collect(Collectors.toList())
+                );
 
                 // Remove expiring and flagged objects from MTree
                 List<AdvancedProudData> toRemove = elements.stream()
