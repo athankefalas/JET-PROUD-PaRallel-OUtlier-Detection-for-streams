@@ -249,7 +249,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                 MTree<SlicingProudData> mTree = state.trees.getOrDefault(nextSlide, null);
 
                 if (mTree != null) {
-                    List<SlicingProudData> nearest = mTree.findNearestInRange(point, r);
+                    List<SlicingProudData> nearest = mTree.findNearestOrCachedInRange(point, r);
                     int nodeCount = nearest.size();
 
                     point.count_after.addAndGet(nodeCount);
@@ -291,7 +291,7 @@ public class SlicingProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Sli
                 MTree<SlicingProudData> mTree = state.trees.getOrDefault(nextSlide, null);
 
                 if (mTree != null) {
-                    List<SlicingProudData> items = mTree.findNearestInRange(point, r);
+                    List<SlicingProudData> items = mTree.findNearestOrCachedInRange(point, r);
 
                     if (!items.isEmpty()) {
                         state.triggers.get(nextSlide).add(point.id);

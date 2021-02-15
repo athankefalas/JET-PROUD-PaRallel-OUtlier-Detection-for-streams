@@ -714,7 +714,7 @@ public class MTree<DATA extends MTreeInsertable & Serializable> implements Seria
      *                  neighbors.
      * @return A {@link List<DATA>} with the nearest query result data and matching cached data.
      */
-    public List<DATA> findNearestInRange(DATA queryData, double range) {
+    public List<DATA> findNearestOrCachedInRange(DATA queryData, double range) {
         Query result = getNearest(queryData, range, Integer.MAX_VALUE);
 
         List<Long> resultIdsList = new LinkedList<>();
@@ -733,6 +733,22 @@ public class MTree<DATA extends MTreeInsertable & Serializable> implements Seria
                 .filter((it)->distanceFunction.calculate(queryData, it) <= range)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    public List<DATA> findNearestInRange(DATA queryData, double range) {
+        Query result = getNearest(queryData, range, Integer.MAX_VALUE);
+
+        List<DATA> resultsList = new LinkedList<>();
+
+        for (ResultItem<DATA> item:result) {
+            if (item == null || item.data == null)
+                continue;
+
+            if (!resultsList.contains(item.data))
+                resultsList.add(item.data);
+        }
+
+        return resultsList;
     }
 
     // END Data caching Impl

@@ -134,7 +134,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                 elements.stream()
                         .filter((p) -> p.arrival >= (windowEnd - slide))
                         .forEach((el)->{
-                            List<AdvancedProudData> treeQuery = finalCurrent.mTree.findNearestInRange(el, R);
+                            List<AdvancedProudData> treeQuery = finalCurrent.mTree.findNearestOrCachedInRange(el, R);
 
                             for (AdvancedProudData node:treeQuery) {
 
@@ -175,7 +175,7 @@ public class AdvancedProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Ad
                 }
 
                 // Update state
-                stateHolder.put(STATE_KEY, current);
+                //stateHolder.put(STATE_KEY, current);
 
                 // Metrics & Statistics
                 stopRecordingMetrics(metricsRecorder);

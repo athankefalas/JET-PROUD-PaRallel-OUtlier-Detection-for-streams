@@ -121,7 +121,7 @@ public class AdvancedExtendedProudAlgorithmExecutor extends AnyProudAlgorithmExe
                     }
 
                     for (AdvancedProudData el: elements) {
-                        List<AdvancedProudData> treeQuery = current.mTree.findNearestInRange(el, r);
+                        List<AdvancedProudData> treeQuery = current.mTree.findNearestOrCachedInRange(el, r);
 
                         for (AdvancedProudData node:treeQuery) {
 
