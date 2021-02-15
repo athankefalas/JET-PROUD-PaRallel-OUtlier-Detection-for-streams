@@ -5,30 +5,22 @@ import common.DatasetOutliersTestSet;
 import common.ResourceFiles;
 import common.UnsafeListStreamOutlierCollector;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.ProudExecutor;
 import edu.auth.jetproud.proud.context.Proud;
 import edu.auth.jetproud.proud.context.ProudContext;
 import edu.auth.jetproud.proud.partitioning.GridPartitioning;
 import edu.auth.jetproud.proud.partitioning.gridresolvers.DefaultGridPartitioners;
-import edu.auth.jetproud.proud.partitioning.gridresolvers.StockGridPartitioner;
 import edu.auth.jetproud.proud.pipeline.ProudPipeline;
 import edu.auth.jetproud.proud.sink.ProudSink;
 import edu.auth.jetproud.proud.source.ProudSource;
 import edu.auth.jetproud.utils.Lists;
-import edu.auth.jetproud.utils.Parser;
 import edu.auth.jetproud.utils.Triple;
 import org.junit.jupiter.api.*;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -70,13 +62,13 @@ public class StockTests
         pipeline.readFrom(ProudSource.file(proud, dataSetFile()))
                 .partition()
                 .detectOutliers()
-                .writeTo(ProudSink.collector(proud, collector));
+                .aggregateAndWriteTo(ProudSink.collector(proud, collector));
 
         Job job = ProudExecutor.executeJob(pipeline);
         CompletableFuture<Void> future = job.getFuture();
 
         long startTime = System.currentTimeMillis();
-        long jobTimeout = 2 * 60 * 1000; // About 6 minutes
+        long jobTimeout = 2000 * 60 * 1000; // About 6 minutes
 
         while (!future.isDone() && Math.abs(System.currentTimeMillis() - startTime) <= jobTimeout) {
             Thread.sleep(10000);

@@ -11,13 +11,18 @@ import edu.auth.jetproud.utils.Tuple;
 public interface ProudOutliersDetectedStreamStage extends StreamStage<Tuple<Long, OutlierQuery>> {
 
     @ClassExtension(ProudOutliersDetectedStreamStageExtender.class)
-    <T> SinkStage writeTo(ProudSink<T> proudSink);
+    <T> SinkStage aggregateAndWriteTo(ProudSink<T> proudSink);
+
+    @ClassExtension(ProudOutliersDetectedStreamStageExtender.class)
+    StreamStage<Tuple<Long, OutlierQuery>> aggregate();
 
     @ClassExtension(ProudOutliersDetectedStreamStageExtender.class)
     SinkStage sinkData();
 
     interface Implementor {
-        <T> SinkStage writeTo(ProudSink<T> proudSink);
+        <T> SinkStage aggregateAndWriteTo(ProudSink<T> proudSink);
+
+        StreamStage<Tuple<Long, OutlierQuery>> aggregate();
 
         SinkStage sinkData();
     }

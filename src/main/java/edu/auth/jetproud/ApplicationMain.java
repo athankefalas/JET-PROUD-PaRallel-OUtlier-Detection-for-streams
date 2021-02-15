@@ -2811,7 +2811,7 @@ public class ApplicationMain {
                 .partition()
                 .detectOutliers()
                 .sinkData();
-                // or .writeTo(ProudSink.auto(proud));
+                // or .aggregateAndWriteTo(ProudSink.auto(proud));
 
         Job job = ProudExecutor.executeJob(pipeline);
     }
