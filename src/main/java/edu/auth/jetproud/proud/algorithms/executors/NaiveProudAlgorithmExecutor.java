@@ -6,6 +6,7 @@ import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 import edu.auth.jetproud.application.parameters.data.ProudSpaceOption;
+import edu.auth.jetproud.model.AdvancedProudData;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.model.NaiveProudData;
 import edu.auth.jetproud.model.meta.OutlierMetadata;
@@ -203,15 +204,13 @@ public class NaiveProudAlgorithmExecutor extends AnyProudAlgorithmExecutor<Naive
     {
 
         public static List<NaiveProudData> evict(List<NaiveProudData> windowData, long windowStart, long windowEnd, long slide) {
-            List<NaiveProudData> evictedWindowData = Lists.copyOf(windowData);
+            List<NaiveProudData> evicted = Lists.copyOf(windowData);
 
-            windowData.removeIf((it)-> {
-                return it.flag == 1
-                        && it.arrival >= windowStart
-                        && it.arrival < (windowEnd - slide);
+            evicted.removeIf((it)->{
+                return it.flag == 1 && it.arrival >= windowStart && it.arrival < windowEnd - slide;
             });
 
-            return windowData;
+            return evicted;
         }
 
         long windowStart;
