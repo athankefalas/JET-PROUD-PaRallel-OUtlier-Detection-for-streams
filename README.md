@@ -31,11 +31,12 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 ## :compass: Contents
 
 1. **[Installation](#floppy_disk-installation)**
-2. **[Configuration](#toolbox-configuration)**
-3. **[PROUD Pipeline API](#dart-proud-pipeline-api)**
-4. **[Extension Points](#scissors-extension-points)**
-5. **[Execution](#joystick-execution)**
-6. **[References](#link-references)**
+2. **[General](#bulb-general)**
+3. **[Configuration](#toolbox-configuration)**
+4. **[PROUD Pipeline API](#dart-proud-pipeline-api)**
+5. **[Extension Points](#jigsaw-extension-points)**
+6. **[Execution](#joystick-execution)**
+7. **[References](#link-references)**
 
 ## :floppy_disk: Installation
 
@@ -61,6 +62,10 @@ compile group: 'edu.auth', name: 'jet-proud', version: 1.0
 ```groovy
 compile "edu.auth:jet-proud:1.0"
 ```
+
+## :bulb: General
+
+Lorem ispum.
 
 ## :toolbox: Configuration
 
