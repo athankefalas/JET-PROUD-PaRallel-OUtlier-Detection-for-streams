@@ -69,7 +69,16 @@ Lorem ispum.
 
 ## :toolbox: Configuration
 
-Lorem ispum.
+Before the PROUD pipeline can be used the library must be 
+correctly configured.
+
+### Configuration Builder
+
+Here.
+
+### Command Line Arguments Configuration
+
+Here 2.
 
 ## :dart: PROUD Pipeline API
 
