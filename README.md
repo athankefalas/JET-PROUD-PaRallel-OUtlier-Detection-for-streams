@@ -39,7 +39,22 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 ## :floppy_disk: Installation
 
-Lorem ispum.
+The library can be easily installed as a dependency using either gradle or maven.
+
+To install PROUD using maven, add the following `dependency` declaration to dependencies section in your pom.xml file:
+```xml
+<dependency>
+  <groupId>edu.auth</groupId>
+  <artifactId>jet-proud</artifactId>
+  <version>1.0</version>
+</dependency>
+```
+
+Alternatively to install PROUD using gradle use the following:
+
+```groovy
+compile group: 'edu.auth', name: 'jet-proud', version: 1.0
+```
 
 ## :toolbox: Configuration
 
