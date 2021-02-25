@@ -8,6 +8,22 @@
     <artifactId>JET-PROUD-PaRallel-OUtlier-Detection-for-streams</artifactId>
     <version>1.0</version>
 
+    <developers>
+        <developer>
+            <id>akef</id>
+            <name>Athanasios Kefalas</name>
+            <email>kefalasa@csd.auth.com</email>
+            <url>https://github.com/athankefalas</url>
+            <organization>Cmputer Science Department - Aristotle University of Thessaloniki</organization>
+            <organizationUrl>https://www.csd.auth.gr/en/</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>Europe/Athens</timezone>
+        </developer>
+    </developers>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>1.8</maven.compiler.target>

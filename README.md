@@ -32,7 +32,7 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 1. **[Installation](#floppy_disk-installation)**
 2. **[Configuration](#toolbox-configuration)**
-3. **[Pipeline API](#dart-proud-pipeline-api)**
+3. **[PROUD Pipeline API](#dart-proud-pipeline-api)**
 4. **[Extension Points](#scissors-extension-points)**
 5. **[Execution](#joystick-execution)**
 6. **[References](#link-references)**
