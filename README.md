@@ -4,7 +4,7 @@ This library is a port of the [PROUD](https://github.com/tatoliop/PROUD-PaRallel
 platform for distance based outlier detection in streaming
 environments in [Hazelcast Jet](https://jet-start.sh/).
 
-##:speech_balloon: About
+## :speech_balloon: About
 
 The PROUD platform was developed in Scala for [Apache Flink](https://flink.apache.org/)
 by [Theodore Toliopoulos](https://github.com/tatoliop) as an
@@ -40,16 +40,17 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 Lorem ispum.
 
-
 ## Configuration
 
 Lorem ispum.
 
-
-## Execution
+## PROUD Pipeline API
 
 Lorem ispum.
 
+## Extension Points
+
+Lorem ispum.
 
 ## Execution
 
