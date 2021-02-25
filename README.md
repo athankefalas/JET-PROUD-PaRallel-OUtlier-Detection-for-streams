@@ -30,7 +30,7 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 ## :compass: Contents
 
-1. [**Installation**](./#compass-contents)
+1. [**Installation**](#floppy_disk-installation)
 2. Configuration
 3. Pipeline API
 4. Extension Points
