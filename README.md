@@ -30,7 +30,7 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 ## :compass: Contents
 
-1. Installation
+1. [**Installation**](./#compass-contents)
 2. Configuration
 3. Pipeline API
 4. Extension Points
@@ -58,21 +58,21 @@ Lorem ispum.
 
 ## 	:link: References
 
-[1]
+**[1]**
 Theodoros Toliopoulos, Christos Bellas, Anastasios Gounaris, and Apostolos Papadopoulos. 2020.
-PROUD: PaRallel OUtlier Detection for Streams.
+_PROUD: PaRallel OUtlier Detection for Streams._
 In Proceedings of the 2020 ACM SIGMOD International Conference on Management of Data (SIGMOD '20).
 Association for Computing Machinery, New York, NY, USA, 2717–2720.
 DOI:https://doi.org/10.1145/3318464.3384688
 
-[2]
+**[2]**
 Theodoros Toliopoulos, Anastasios Gounaris, Kostas Tsichlas, Apostolos Papadopoulos, Sandra Sampaio.
-Continuous outlier mining of streaming data in flink.
+_Continuous outlier mining of streaming data in flink._
 Information Systems, Volume 93, 2020, 101569, ISSN 0306-4379.
 DOI:https://doi.org/10.1016/j.is.2020.101569.
 
-[3]
+**[3]**
 Theodoros Toliopoulos and Anastasios Gounaris,
-Multi-parameter streaming outlier detection.
+_Multi-parameter streaming outlier detection._
 In Proceedings of the 2019 IEEE/WIC/ACM International Conference on Web Intelligence (WI), Thessaloniki, Greece, 2019, pp. 208-216.
 DOI:https://doi.org/10.1145/3350546.3352520.
