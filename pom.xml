@@ -6,7 +6,7 @@
 
     <groupId>edu.auth</groupId>
     <artifactId>JET-PROUD-PaRallel-OUtlier-Detection-for-streams</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -62,9 +62,10 @@
                 <version>3.2.0</version>
                 <configuration>
                     <archive>
-                        <manifest>
-                            <mainClass>edu.auth.jetproud.ApplicationMain</mainClass>
-                        </manifest>
+                        <manifestEntries>
+                            <Built-By>Athanasios Kefalas</Built-By>
+                            <Class-Path>.</Class-Path>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
