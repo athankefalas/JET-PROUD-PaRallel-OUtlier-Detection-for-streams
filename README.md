@@ -56,6 +56,12 @@ Alternatively to install PROUD using gradle use the following:
 compile group: 'edu.auth', name: 'jet-proud', version: 1.0
 ```
 
+**OR**
+
+```groovy
+compile "edu.auth:jet-proud:1.0"
+```
+
 ## :toolbox: Configuration
 
 Lorem ispum.
