@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.auth</groupId>
-    <artifactId>JET-PROUD-PaRallel-OUtlier-Detection-for-streams</artifactId>
+    <artifactId>jet-proud</artifactId>
     <version>1.0</version>
 
     <developers>
@@ -23,6 +23,14 @@
             <timezone>Europe/Athens</timezone>
         </developer>
     </developers>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub athankefalas Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/athankefalas/JET-PROUD-PaRallel-OUtlier-Detection-for-streams</url>
+        </repository>
+    </distributionManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
