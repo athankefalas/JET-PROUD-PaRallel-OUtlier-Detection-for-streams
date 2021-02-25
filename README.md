@@ -25,7 +25,7 @@ data, namely grid-based and tree-based technique. The first one is only
 used for the euclidead space while the second one can be used for any 
 metric space.
 
-This version of PROUD was developed as part of a thesis project in Java
+This version of PROUD was developed as part of a dissertation project in Java
 and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 ## :compass: Contents
