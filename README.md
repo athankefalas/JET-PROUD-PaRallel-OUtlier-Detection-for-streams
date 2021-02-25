@@ -36,7 +36,7 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 4. Extension Points
 5. Execution
 
-## Installation
+## :floppy_disk: Installation
 
 Lorem ispum.
 
@@ -44,7 +44,7 @@ Lorem ispum.
 
 Lorem ispum.
 
-## :briefcase: PROUD Pipeline API
+## :dart: PROUD Pipeline API
 
 Lorem ispum.
 
@@ -56,7 +56,7 @@ Lorem ispum.
 
 Lorem ispum.
 
-## 	:paperclip: References
+## 	:link: References
 
 [1]
 Theodoros Toliopoulos, Christos Bellas, Anastasios Gounaris, and Apostolos Papadopoulos. 2020.
