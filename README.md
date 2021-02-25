@@ -30,11 +30,12 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 ## :compass: Contents
 
-1. [**Installation**](#floppy_disk-installation)
-2. Configuration
-3. Pipeline API
-4. Extension Points
-5. Execution
+1. **[Installation](#floppy_disk-installation)**
+2. **[Configuration](#toolbox-configuration)**
+3. **[Pipeline API](#dart-proud-pipeline-api)**
+4. **[Extension Points](#scissors-extension-points)**
+5. **[Execution](#joystick-execution)**
+6. **[References](#link-references)**
 
 ## :floppy_disk: Installation
 
