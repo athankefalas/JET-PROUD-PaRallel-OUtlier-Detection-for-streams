@@ -70,7 +70,7 @@ Lorem ispum.
 
 Lorem ispum.
 
-## :scissors: Extension Points
+## :jigsaw: Extension Points
 
 Lorem ispum.
 
