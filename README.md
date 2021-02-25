@@ -28,7 +28,7 @@ metric space.
 This version of PROUD was developed as part of a thesis project in Java
 and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
-## Contents
+## :compass: Contents
 
 1. Installation
 2. Configuration
@@ -40,23 +40,23 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
 
 Lorem ispum.
 
-## Configuration
+## :toolbox: Configuration
 
 Lorem ispum.
 
-## PROUD Pipeline API
+## :briefcase: PROUD Pipeline API
 
 Lorem ispum.
 
-## Extension Points
+## :scissors: Extension Points
 
 Lorem ispum.
 
-## Execution
+## :joystick: Execution
 
 Lorem ispum.
 
-## References
+## 	:paperclip: References
 
 [1]
 Theodoros Toliopoulos, Christos Bellas, Anastasios Gounaris, and Apostolos Papadopoulos. 2020.
