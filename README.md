@@ -465,7 +465,53 @@ the command line option is used only for compatibility purposes only.
 
 ## :dart: PROUD Pipeline API
 
-Lorem ispum.
+After PROUD is configured the outlier detection process can be executed by invoking the
+`ProudPipeline` and providing the created configuration by means of
+a `ProudContext` instance. 
+
+The complete general flow can be viewed below.
+
+```java
+Proud proud = Proud.builder()
+        .forAlgorithm(ProudAlgorithmOption.Naive)
+        .inSingleSpace()
+        .querying(50, 0.45, 10000, 500)
+        .forDatasetNamed("$DATASET_NAME")
+        .fromKafka()
+            .inTopic("$KAFKA_TOPIC")
+        .replicationPartitioned()
+        .writingOutliersToInfluxDB()
+            .inDatabase("$DB_NAME")
+                .locatedAt("$DB_HOST")
+                .authenticatedWith("$USERNAME","$PASSWORD")
+        .enablingDebug() // Optional
+        .build();
+
+ProudPipeline pipeline = ProudPipeline.create(proud);
+
+pipeline.readFrom(ProudSource.auto(proud))
+        .partition()
+        .detectOutliers()
+        .aggregateAndWriteTo(ProudSink.auto(proud));
+
+Job job = ProudExecutor.executeJob(pipeline);
+```
+
+### Proud Source
+
+Lorem.
+
+### Partition Data
+
+Lorem.
+
+### Detect Outliers
+
+Lorem.
+
+### Proud Sink
+
+Lorem.
 
 ## :jigsaw: Extension Points
 
