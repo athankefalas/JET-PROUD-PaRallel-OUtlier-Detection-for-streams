@@ -17,14 +17,14 @@ public interface ProudOutliersDetectedStreamStage extends StreamStage<Tuple<Long
     StreamStage<Tuple<Long, OutlierQuery>> aggregate();
 
     @ClassExtension(ProudOutliersDetectedStreamStageExtender.class)
-    SinkStage sinkData();
+    SinkStage aggregateAndWriteData();
 
     interface Implementor {
         <T> SinkStage aggregateAndWriteTo(ProudSink<T> proudSink);
 
         StreamStage<Tuple<Long, OutlierQuery>> aggregate();
 
-        SinkStage sinkData();
+        SinkStage aggregateAndWriteData();
     }
 
 }

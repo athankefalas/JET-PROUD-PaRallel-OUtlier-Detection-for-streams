@@ -68,7 +68,7 @@ public class ProudOutliersDetectedStreamStageExtender extends AnyProudJetClassEx
     }
 
     @Override
-    public SinkStage sinkData() {
+    public SinkStage aggregateAndWriteData() {
         ProudSink<?> sink = ProudSink.auto(proudContext);
         return aggregateAndWriteTo(sink);
     }

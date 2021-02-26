@@ -472,6 +472,7 @@ a `ProudContext` instance.
 The complete general flow can be viewed below.
 
 ```java
+// Configuration
 Proud proud = Proud.builder()
         .forAlgorithm(ProudAlgorithmOption.Naive)
         .inSingleSpace()
@@ -487,19 +488,24 @@ Proud proud = Proud.builder()
         .enablingDebug() // Optional
         .build();
 
+// Pipeline
 ProudPipeline pipeline = ProudPipeline.create(proud);
 
-pipeline.readFrom(ProudSource.auto(proud))
+pipeline.readData()
         .partition()
         .detectOutliers()
-        .aggregateAndWriteTo(ProudSink.auto(proud));
+        .aggregateAndWriteData();
 
+// Execute PROUD Pipeline
 Job job = ProudExecutor.executeJob(pipeline);
 ```
 
 ### Proud Source
 
-Lorem.
+The stream items are read from an instance that implements `ProudSource`
+and can be ultimately resolved to native Jet `Source`. Instances of `ProudSource`
+that are implemented by default in PROUD can read stream items from a file,
+or a kafka topic. 
 
 ### Partition Data
 
