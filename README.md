@@ -36,22 +36,22 @@ in a production setting or added in the process of any critical downstream syste
 2. **[General](#bulb-general)**
 3. **[Configuration](#toolbox-configuration)**
    1. **[Configuration Builder](#configuration-builder)**
-      1. **[Algorithm Selection](#1-algorithm-selection)**
-      2. **[Outlier Query Type Selection](#2-outlier-query-type-selection)**
-      3. **[Outlier Query Definition](#3-outlier-query-definition)**
-      4. **[Dataset and Input Configuration](#4-dataset-and-input-configuration)**
-      5. **[Partitioning Method Configuration](#5-partitioning-method-configuration)**
-          1. **[Replication Partitioning](#replication-partitioning)**
-          2. **[Tree Partitioning](#tree-partitioning)**
-          3. **[Grid Partitioning](#grid-partitioning)**
-          4. **[User Defined Partitioning](#user-defined-partitioning)**
-      6. **[Output Configuration](#6-output-configuration)**
-      7. **[Building the configuration](#7-building-the-configuration)**
+      1. *[Algorithm Selection](#1-algorithm-selection)*
+      2. *[Outlier Query Type Selection](#2-outlier-query-type-selection)*
+      3. *[Outlier Query Definition](#3-outlier-query-definition)*
+      4. *[Dataset and Input Configuration](#4-dataset-and-input-configuration)*
+      5. *[Partitioning Method Configuration](#5-partitioning-method-configuration)*
+          1. [Replication Partitioning](#replication-partitioning)
+          2. [Tree Partitioning](#tree-partitioning)
+          3. [Grid Partitioning](#grid-partitioning)
+          4. [User Defined Partitioning](#user-defined-partitioning)
+      6. *[Output Configuration](#6-output-configuration)*
+      7. *[Building the configuration](#7-building-the-configuration)*
    2. **[Command Line Arguments Configuration](#command-line-arguments-configuration)**
-      1. **[Command Line Options](#command-line-options)**
-      2. **[Environment Variables](#environment-variables)**
-      3. **[Creating the Configuration](#creating-the-configuration)**
-      4. **[Caveats](#caveats)**
+      1. *[Command Line Options](#command-line-options)*
+      2. *[Environment Variables](#environment-variables)*
+      3. *[Creating the Configuration](#creating-the-configuration)*
+      4. *[Caveats](#caveats)*
 4. **[PROUD Pipeline API](#dart-proud-pipeline-api)**
    1. **[Proud Source](#proud-source)**
       1. *[Auto Source](#auto-source)*
