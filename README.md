@@ -159,7 +159,7 @@ Proud proud = Proud.builder()
 
 After the required outlier query type is selected, the parameters for the query must be configured. The builder automatically provides a function
 named `querying(...)` that can receive the appropriate parameters based on the query type. All query types can accept one or more of four parameters:
-K `-` number of neighbours, R `-` distance range, W `-` window size in milliseconds and S `-` window slide size in milliseconds. Exmaples of the 
+K - number of neighbours, R - distance range, W - window size in milliseconds and S - window slide size in milliseconds. Examples of the 
 definition of query parameters for each query type can be seen below.
 
 ```java
@@ -189,7 +189,7 @@ Proud proud = Proud.builder()
 #### 4. Dataset and Input Configuration
 
 The next step includes the configuration of the input dataset and the source to read the dataset items from. PROUD supports by default a
-file input datasource and a kafka input datasource which can be later automatically resolved to a Hazelcast Jet `Source`.
+file input datasource, and a kafka input datasource which can be later automatically resolved to a Hazelcast Jet `Source`.
 
 ```java
 import edu.auth.jetproud.proud.context.Proud;
@@ -215,7 +215,7 @@ Proud proud = Proud.builder()
 
 ```
 
-#### 5. Partitioing Method Configuration
+#### 5. Partitioning Method Configuration
 
 The configuration of the partitioning method to be used by PROUD can also be configured via the builder instance. The available partitioning methods
 and the algorithms they are supported by, are the following:
@@ -225,11 +225,242 @@ and the algorithms they are supported by, are the following:
 * Value Based with a Grid - **All algorithms except from Naive & Advanced**
 * User Defined - **Unknown**
 
+The options for each partitioning method can be seen in the following sections.
+
+##### Replication Partitioning
+
+Replication Partitioning replicates the stream items in all Jet partitions, while flagging the items
+that truly belong in the partition with `0` and replicated items with `1`.
+
+```java
+import edu.auth.jetproud.proud.context.Proud;
+import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.Naive)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                .fromKafka()
+                  .inTopic("$KAFKA_TOPIC")
+                .replicationPartitioned()
+
+
+```
+
+##### Tree Partitioning
+
+Value based partitioning with Tree, uses a vantage point tree that queries the spatial coordinates of an item
+and assign it to a primary partition, as well as replicates it to a number of neighbouring partitions. An item
+that belongs to a specific partition is flagged with a `0` while replicated copies of the item in neighbouring
+partitions are flagged with `1`. The vantage point tree needs to be initialized
+with a sample of the dataset and must be available as a file.
+
+Tree based partitioning can be configured by the following:
+
+```java
+import edu.auth.jetproud.proud.context.Proud;
+import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+
+// Tree Partitioning
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.PMCod)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                .fromKafka()
+                  .inTopic("$KAFKA_TOPIC")
+                .treePartitionedUsing("$ABSOLUTE_PATH_TO_TREE_INIT_FILE")
+        
+// Tree Partitioning with a custom initial node count
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.PMCod)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                    .fromKafka()
+                .inTopic("$KAFKA_TOPIC")
+                .treePartitionedUsing("$ABSOLUTE_PATH_TO_TREE_INIT_FILE", 1205)
+
+
+```
+
+##### Grid Partitioning
+
+Value based partitioning with Grid, uses a grid cell structure and the spatial coordinates of an item
+in order to assign it to a primary partition, as well as replicate it to a number of neighbouring partitions. An item
+that belongs to a specific partition is flagged with a `0` while replicated copies of the item in neighbouring
+partitions are flagged with `1`. The grid based partitioning, requires a user defined function that
+partitions the items by taking advantage of foreknowledge of the general spatial boundaries of the dataset. The `GridPartitioning.GridPartitioner` is an interface that
+encapsulates this functionality, and it is a required parameter when using grid base partitioning.
+
+For the Stocks and TAO datasets a grid partitioner is implemented by default and and an instance can
+be created by invoking `DefaultGridPartitioners.forDatasetNamed("STK")`. While the configuration of 
+grid partitioning can be seen below. 
+
+```java
+import edu.auth.jetproud.proud.context.Proud;
+import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.PMCod)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                .fromKafka()
+                  .inTopic("$KAFKA_TOPIC")
+                .gridPartitionedUsing(new GridPartitioning.GridPartitioner(){...})
+
+
+```
+
+##### User Defined Partitioning
+
+PROUD allows for the definition and use of a user defined partitioning method when using the PROUD Pipeline. The feature
+however is opt-in and must be explicitly configured.
+
+```java
+import edu.auth.jetproud.proud.context.Proud;
+import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.Naive)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                .fromKafka()
+                  .inTopic("$KAFKA_TOPIC")
+                .userDefinedPartitioning()
+
+
+```
+
+#### 6. Output Configuration
+
+By default, PROUD supports two types of output: influxDB and logger. The logger output
+simply prints the items in the console while the influxDB output saves results in a connected
+influxDB. Both types of output can be auto-resolved to a Hazelcast Sink.
+
+The configuration of the output of PROUD can be seen below.
+
+```java
+import edu.auth.jetproud.proud.context.Proud;
+import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+
+// Logger output
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.Naive)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                .fromKafka()
+                  .inTopic("$KAFKA_TOPIC")
+                .replicationPartitioned()
+                .printingOutliers()
+
+// InfluxDB output
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.Naive)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                .fromKafka()
+                    .inTopic("$KAFKA_TOPIC")
+                .replicationPartitioned()
+                .writingOutliersToInfluxDB()
+                    .inDatabase("$DB_NAME")
+                        .locatedAt("$DB_HOST")
+                        .authenticatedWith("$USERNAME","$PASSWORD")
+
+
+```
+#### 7. Building the configuration
+
+After the configuration is created using the builder the `build()` method must be invoked to
+finalize the configuration and perform a validation check. Additionally, in order to
+enable debug mode in PROUD call the `enablingDebug()` method on the builder before finalizing
+the configuration. The finalized configuration is an instance that implements `ProudContext` and
+is used internally by PROUD to extract the configured options. A complete example of the configuration process can be seen below.
+
+```java
+import edu.auth.jetproud.proud.context.Proud;
+import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
+
+Proud proud = Proud.builder()
+                .forAlgorithm(ProudAlgorithmOption.Naive)
+                .inSingleSpace()
+                .querying(50, 0.45, 10000, 500)
+                .forDatasetNamed("$DATASET_NAME")
+                .fromKafka()
+                    .inTopic("$KAFKA_TOPIC")
+                .replicationPartitioned()
+                .writingOutliersToInfluxDB()
+                    .inDatabase("$DB_NAME")
+                        .locatedAt("$DB_HOST")
+                        .authenticatedWith("$USERNAME","$PASSWORD")
+                .enablingDebug() // Optional
+                .build();
+
+
+```
 
 
 ### Command Line Arguments Configuration
 
-Here 2.
+An alternative to using the builder object to configure PROUD is to use command line arguments as wells as
+environment variables to extract the configuration options. This method of configuring PROUD is
+compatible with the Flink version of PROUD and uses the same options and variables.
+
+#### Command Line Options
+
+Command | Options
+------- | --------
+**space** | Possible value are: "*single*", "*rk*", "*rkws*".
+**algorithm** | Possible values for *single-query space* are: "*naive*", "*advanced*", "*advanced_extended*", "*slicing*", "*pmcod*" and "*pmcod_net*". <BR> Possible values for multi-query space are "*amcod*", "*sop*", "*psod*" and "*pmcsky*".
+**k** | Possible values include one or more integers - minimum kNeighbours. <BR> *50[;80;100]*
+**R** | Possible values include one or more floating point numbers - distance ranges. <BR> *0.45[;0.15;0.97]*
+**W** | Possible values include one or more integers - window sizes. <BR> *1000[;2000;3000]*
+**S** | Possible values include one or more integers - slide sizes. <BR> *250[;500;1000]*
+**dataset**| Possible values include a String - the name of the dataset.
+**partitioning**| Partitioning option. <BR>"*replication*" partitioning is mandatory for "naive" and "advanced" algorithms whilst "*grid*" and "*tree*" partitioning is available for every other algorithm. <BR> "*grid*" technique needs pre-recorded data on the dataset's distribution. <BR> "*tree*" technique needs a file containing data points from the dataset in order to initialize the VP-tree
+**tree_init** (Optional)| Represents the number of data points to be read for initialization by the "*tree*" partitioning technique.<BR> *Default value is 10000*
+
+
+#### Environment Variables
+
+Variable | Options
+---------|--------
+JOB_INPUT| The absolute path of the location of the dataset files.
+KAFKA_BROKERS|The Kafka Broker to be used as the input
+KAFKA_TOPIC|The Kafka Topic
+INFLUXDB_DB|The name of the InfluxDB database
+INFLUXDB_HOST|The host of the InfluxDB database
+INFLUXDB_USER| The username needed for authenticating with the InfluxDB database
+INFLUXDB_PASSWORD|The password needed for authenticating with the InfluxDB database
+
+#### Creating the Configuration
+
+The code below can used to create the required `ProudContext` instance by reading the command line
+configuration. 
+
+```java
+import edu.auth.jetproud.proud.context.Proud;
+
+public static void main(String[] args) throws ProudArgumentException {
+        Proud proud = Proud.builder(args)
+                           .enablingDebug()
+                           .build();
+}
+
+
+```
+
+#### Caveats
+
+The command line configuration of PROUD os not recommended as it may only work with the two default datasets (Stocks, TAO)
+especially when using grid partitioning.
+Additionally, no user defined functionalities can be used. The use of the builder object is the
+preferred way to configure PROUD, and the command line option is used only for compatibility.
 
 ## :dart: PROUD Pipeline API
 
