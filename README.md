@@ -457,10 +457,11 @@ public static void main(String[] args) throws ProudArgumentException {
 
 #### Caveats
 
-The command line configuration of PROUD os not recommended as it may only work with the two default datasets (Stocks, TAO)
+The command line configuration of PROUD is not recommended as it may only work with the two default datasets (Stocks, TAO)
 especially when using grid partitioning.
-Additionally, no user defined functionalities can be used. The use of the builder object is the
-preferred way to configure PROUD, and the command line option is used only for compatibility.
+Additionally, no user defined functionalities can be added with this style of configuration. 
+The use of the builder object is the preferred way to configure PROUD, and
+the command line option is used only for compatibility purposes only.
 
 ## :dart: PROUD Pipeline API
 
