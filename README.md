@@ -68,6 +68,8 @@ in a production setting or added in the process of any critical downstream syste
    5. **[Pipeline Downgrade](#pipeline-downgrade)**
    6. **[Jet Pipeline Upgrade](#jet-pipeline-upgrade)**
 5. **[Extension Points](#jigsaw-extension-points)**
+   1. **[User Defined Partitioning](#user-defined-partitioning-extension-points)**
+   2. **[User Defined Outlier Detection](#user-defined-outlier-detection-extension-points)**
 6. **[Execution](#joystick-execution)**
 7. **[References](#link-references)**
 
@@ -536,7 +538,7 @@ Job job = ProudExecutor.executeJob(pipeline);
 ### Proud Source
 
 The stream items are read from an instance that implements `ProudSource`
-and can be ultimately resolved to native Jet `Source`. Instances of `ProudSource`
+and can be ultimately resolved to a native Jet `Source`. Instances of `ProudSource`
 that are implemented by default in PROUD can read stream items from a file,
 or a kafka topic. 
 
@@ -724,11 +726,11 @@ The PROUD Pipeline provides a method to use any user defined or default sink:
 // Configuration
 Proud proud = /* Configuration Creation */ ;
 
-// Proud Pipeline with a file source
-pipeline.readFrom(ProudSource.file(proud))
+// Proud Pipeline with a logger sink
+pipeline.readData()
         .partition()
         .detectOutliers()
-        .aggregateAndWriteData();
+        .aggregateAndWriteTo(ProudSink.logger(proud));
 
 // Proud Pipeline with a custom sink
 pipeline.readData()
@@ -815,11 +817,11 @@ ProudPipeline.from(jetPipeline, proud)
 In addition to the extension points for defining custom sources and sinks the Proud Pipeline
 supports the definition of user defined partitioning methods and outlier detection algorithms.
 
-### User Defined Partitioning Extension Point
+### User Defined Partitioning Extension Points
 
 Lorem ispum sit amet dolor me amor tiero accrecateur.
 
-### User Defined Outlier Detection Extension point
+### User Defined Outlier Detection Extension points
 
 Lorem ispum sit amet dolor me amor tiero accrecateur.
 
