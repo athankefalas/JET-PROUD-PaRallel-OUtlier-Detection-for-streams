@@ -294,7 +294,7 @@ partitions are flagged with `1`. The grid based partitioning, requires a user de
 partitions the items by taking advantage of foreknowledge of the general spatial boundaries of the dataset. The `GridPartitioning.GridPartitioner` is an interface that
 encapsulates this functionality, and it is a required parameter when using grid base partitioning.
 
-For the Stocks and TAO datasets a grid partitioner is implemented by default and and an instance can
+For the Stocks and TAO datasets a grid partitioner is implemented by default and an instance can
 be created by invoking `DefaultGridPartitioners.forDatasetNamed("STK")`. While the configuration of 
 grid partitioning can be seen below. 
 
@@ -440,8 +440,8 @@ INFLUXDB_PASSWORD|The password needed for authenticating with the InfluxDB datab
 
 #### Creating the Configuration
 
-The code below can used to create the required `ProudContext` instance by reading the command line
-configuration. 
+The code below can used to create the required `ProudContext` instance by reading the configuration from the command line
+arguments and environment variables discussed above. 
 
 ```java
 import edu.auth.jetproud.proud.context.Proud;
@@ -461,7 +461,7 @@ The command line configuration of PROUD is not recommended as it may only work w
 especially when using grid partitioning.
 Additionally, no user defined functionalities can be added with this style of configuration. 
 The use of the builder object is the preferred way to configure PROUD, and
-the command line option is used only for compatibility purposes only.
+the command line option is used for compatibility purposes only.
 
 ## :dart: PROUD Pipeline API
 
