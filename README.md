@@ -26,7 +26,9 @@ used for the euclidead space while the second one can be used for any
 metric space.
 
 This version of PROUD was developed as part of a dissertation project in Java
-and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas).
+and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas). This
+library is provided *AS IS* and it is **NOT** recommended that it is used
+in a production setting or added in the process of any critical downstream systems.
 
 ## :compass: Contents
 
@@ -507,6 +509,108 @@ and can be ultimately resolved to native Jet `Source`. Instances of `ProudSource
 that are implemented by default in PROUD can read stream items from a file,
 or a kafka topic. 
 
+#### Auto Source
+
+As was mentioned previously the source can be automatically resolved from
+the configuration. To create the appropriate source automatically use the
+code below:
+
+```java
+
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Create an appropriate source based 
+//  on the specific configuration. 
+ProudSource.auto(proud);
+
+```
+
+#### File Source
+
+A file source reads stream items from a file located on the local filesystem.
+All such sources implemented by default in PROUD are instances of `ProudFileSource` which
+implements the `ProudSource` interface. By default, the home directory used in these sources
+is retrieved from the configuration.
+
+Proud file sources can be created by using one of the methods below:
+
+```java
+
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// File source by reading the File Name from
+//  the configuration and using the default
+//  field and value delimiters ("&" and "," respectively)
+ProudSource.file(proud);
+
+// File source by reading the specified file 
+//  and using the default field and value 
+//  delimiters ("&" and "," respectively)
+ProudSource.file(proud, "$FILE_NAME");
+
+// File source by reading the File Name from
+//  the configuration and using the specified
+//  field and value delimiters
+ProudSource.file(proud, "$FIELD_DELIMITER", "$VALUE_DELIMITER");
+
+// File source by reading the specified file
+//  and using the specified field and value delimiters
+ProudSource.file(proud, "$FILE_NAME", "$FIELD_DELIMITER", "$VALUE_DELIMITER");
+
+```
+
+#### Kafka Source
+
+A Kafka source reads stream items from a Kafka broker and listening to a specific topic.
+The Kafka source implemented by default in PROUD is an instance of `ProudKafkaSource` which
+implements the `ProudSource` interface. By default, the Kafka connection information used in these source
+are retrieved from the configuration.
+
+Proud Kafka sources can be created by using the method below:
+
+```java
+
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Kafka source that connects to the broker and topic
+//  specified in the configuration
+ProudSource.kafkaSource(proud);
+
+```
+
+#### User Defined Sources
+
+The definition of custom PROUD sources can be achieved by implementing the `ProudSource`
+interface or by extending the `ProudFileSource` or `ProudKafkaSource` classes. As the `ProudSource`
+interface is the more abstract type in the PROUD sources type hierarchy it can be implemented
+to use any type of data connector and source internally. The only constraint is that all
+implementing types must implement the `readInto(Pipeline pipeline)` which reads data from a
+native Jet source of any type and returns a `StreamStage<T extends AnyProudData>` instance.
+
+The PROUD Pipeline provides a method to use any user defined or default source:
+
+```java
+
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Proud Pipeline with a file source
+pipeline.readFrom(ProudSource.file(proud))
+        .partition()
+        .detectOutliers()
+        .aggregateAndWriteData();
+
+// Proud Pipeline with a custom source
+pipeline.readFrom(new ProudSource<AnyProudData>() { ... })
+        .partition()
+        .detectOutliers()
+        .aggregateAndWriteData();
+
+```
+
 ### Partition Data
 
 Lorem.
@@ -519,13 +623,99 @@ Lorem.
 
 Lorem.
 
+### Pipeline Downgrade
+
+The Proud Pipeline can be downgraded to a native Jet pipeline at any point as the Proud Pipeline
+is a proxy extension of the native Jet `Pipeline` type. A common downgrade use case is to 
+further process the results produced by the outlier detection process.
+
+Proud Pipeline downgrade example:
+
+```java
+
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Proud Pipeline with a file source
+pipeline.readFrom(ProudSource.file(proud))
+        .partition() // Proud Pipeline
+        .detectOutliers() // Proud Pipeline
+        .filter((res)->res.second.outlierCount > 50) // Downgraded to a Jet Pipeline
+        .map((it)->"Alert! Found "+it.second.outlierCount+" outliers.") // Jet Pipeline
+        .writeTo(Sinks.logger()); // Jet Pipeline, Jet Sink
+
+```
+
+### Jet Pipeline Upgrade
+
+Alternatively, a native Jet pipeline may be upgraded to a Proud Pipeline to easily 
+incorporate outlier detection. This process can also be easily achieved by using the
+`from(Pipeline, ProudContext)` method in `ProudPipeline`.
+
+A rather naive example of this operation can be seen below.
+
+```java
+
+// A generic native Jet Pipeline
+StreamStage<ProudDataConvertible> jetPipeline = Pipeline.create()
+        .readFrom(TestSources.itemStream(100))
+        .withIngestionTimestamps()
+        .map((num)->{
+            // Map stream items to ProudDataConvertible items
+            final Random random = new Random(num.timestamp());
+            final List<Double> coordinates = new ArrayList<>();
+            coordinates.add(random.nextDouble());
+            
+            return new ProudDataConvertible(){
+                @Override
+                public int identifier() {
+                    return (int) num.sequence();
+                }
+
+                @Override
+                public List<Double> coordinates() {
+                    return coordinates;
+                }
+
+                @Override
+                public long arrivalTime() {
+                    return num.timestamp();
+                }
+            };
+        });
+
+// Proud Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Upgrade to Proud Pipeline
+ProudPipeline.from(jetPipeline, proud)
+        .partition()
+        .detectOutliers()
+        .aggregateAndWriteData();
+
+```
+
 ## :jigsaw: Extension Points
 
 Lorem ispum.
 
 ## :joystick: Execution
 
-Lorem ispum.
+After the Proud library is configured and the pipeline is defined the pipeline can be submitted to Jet
+for execution. This can be achieved either by using a predefined `ProudExecutor` helper or the
+native Jet API.
+
+```java
+// Proud Executor pipeline execution
+Job job = ProudExecutor.executeJob(pipeline);
+
+// Native Jet API Execution
+JetInstance jet = Jet.newJetInstance();
+Job job = jet.newJob(pipeline.jetPipeline()); // IMPORTANT: Do not submit the ProudPipeline directly !!!
+
+job.join();
+
+```
 
 ## 	:link: References
 
