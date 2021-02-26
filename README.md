@@ -613,15 +613,99 @@ pipeline.readFrom(new ProudSource<AnyProudData>() { ... })
 
 ### Partition Data
 
-Lorem.
+The stream items that were read into the Proud Pipeline can be easily partitioned
+by invoking the `partition()` method. The underlying partitioning implementation is
+automatically selected by checking the configuration options.
 
 ### Detect Outliers
 
-Lorem.
+The partitioned stream items in the Proud Pipeline can be easily processed in order
+to detect outliers by invoking the `detectOutliers()` method. The underlying 
+algorithm, parameters and processing is automatically selected by checking the configuration options.
 
 ### Proud Sink
 
-Lorem.
+The results of the outlier detection process can be written to a sink that
+implements the `ProudSink` interface and can be ultimately resolved to native
+Jet `Sink`. Instances of `ProudSink` that are implemented by default in PROUD
+can be used to write data to an influxDB server or print them to the console.
+
+#### Auto Sink
+As it was mentioned previously the sink can be automatically resolved from the
+PROUD configuration. To create the appropriate sink automatically use the code below:
+
+```java
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Create an appropriate sink based 
+//  on the specific configuration. 
+ProudSink.auto(proud);
+
+```
+
+#### Logger Sink
+
+A logger sink writes stream items to the console stdout. The logger proud sink
+implemented by default in PROUD is an instance of `ProudPrintSink` that implements
+the interface `ProudSink`. 
+
+Proud logger sinks can be created by using the method below:
+
+```java
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Create a logger sink.
+ProudSink.logger(proud);
+```
+
+#### InfluxDB Sink
+
+An InfluxDB sink writes stream items to an InfluxDB database. The InfluxDB proud sink
+implemented by default in PROUD is an instance of `ProudInfluxDBSink` that implements
+the interface `ProudSink`.
+
+Proud InfluxDB sinks can be created by using the method below:
+
+```java
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Create an InfluxDB sink.
+ProudSink.influxDB(proud);
+```
+
+#### User Defined Sinks
+
+The definition of custom PROUD sinks can be achieved by implementing the `ProudSink`
+interface or by extending the `AnyProudSink`,`ProudPrintSink` or `ProudInfluxDBSink` classes.
+The `AnyProudSink` abstract class is the best type to use as an extension point in order
+to use any data connector and sink internally, without losing the default implementation
+of a required internal aggregation step. The only constraint is that all
+implementing types must implement the `createJetSink()` and the 
+`convertResultItem(long slide, OutlierQuery query)` methods.
+
+The PROUD Pipeline provides a method to use any user defined or default sink:
+
+```java
+
+// Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Proud Pipeline with a file source
+pipeline.readFrom(ProudSource.file(proud))
+        .partition()
+        .detectOutliers()
+        .aggregateAndWriteData();
+
+// Proud Pipeline with a custom sink
+pipeline.readData()
+        .partition()
+        .detectOutliers()
+        .aggregateAndWriteTo(new AnyProudSink<T>() { ... });
+
+```
 
 ### Pipeline Downgrade
 
@@ -697,7 +781,17 @@ ProudPipeline.from(jetPipeline, proud)
 
 ## :jigsaw: Extension Points
 
-Lorem ispum.
+In addition to the extension points for defining custom sources and sinks the Proud Pipeline
+supports the definition of user defined partitioning methods and outlier detection algorithms.
+
+### User Defined Partitioning
+
+Lorem ispum sit amet dolor me amor tiero accrecateur.
+
+### User Defined Outlier Detection
+
+Lorem ispum sit amet dolor me amor tiero accrecateur.
+
 
 ## :joystick: Execution
 
