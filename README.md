@@ -35,7 +35,38 @@ in a production setting or added in the process of any critical downstream syste
 1. **[Installation](#floppy_disk-installation)**
 2. **[General](#bulb-general)**
 3. **[Configuration](#toolbox-configuration)**
+   1. **[Configuration Builder](#configuration-builder)**
+      1. **[Algorithm Selection](#1-algorithm-selection)**
+      2. **[Outlier Query Type Selection](#2-outlier-query-type-selection)**
+      3. **[Outlier Query Definition](#3-outlier-query-definition)**
+      4. **[Dataset and Input Configuration](#4-dataset-and-input-configuration)**
+      5. **[Partitioning Method Configuration](#5-partitioning-method-configuration)**
+          1. **[Replication Partitioning](#replication-partitioning)**
+          2. **[Tree Partitioning](#tree-partitioning)**
+          3. **[Grid Partitioning](#grid-partitioning)**
+          4. **[User Defined Partitioning](#user-defined-partitioning)**
+      6. **[Output Configuration](#6-output-configuration)**
+      7. **[Building the configuration](#7-building-the-configuration)**
+   2. **[Command Line Arguments Configuration](#command-line-arguments-configuration)**
+      1. **[Command Line Options](#command-line-options)**
+      2. **[Environment Variables](#environment-variables)**
+      3. **[Creating the Configuration](#creating-the-configuration)**
+      4. **[Caveats](#caveats)**
 4. **[PROUD Pipeline API](#dart-proud-pipeline-api)**
+   1. **[Proud Source](#proud-source)**
+      1. *[Auto Source](#auto-source)*
+      2. *[File Source](#file-source)*
+      3. *[Kafka Source](#kafka-source)*
+      4. *[User Defined Sources](#user-defined-sources)*
+   2. **[Partition Data](#partition-data)**
+   3. **[Detect Outliers](#detect-outliers)**
+   4. **[Proud Sink](#proud-sink)**
+      1. *[Auto Sink](#auto-sink)*
+      2. *[Logger Sink](#logger-sink)*
+      3. *[InfluxDB Sink](#influxdb-sink)*
+      4. *[User Defined Sinks](#user-defined-sinks)*
+   5. **[Pipeline Downgrade](#pipeline-downgrade)**
+   6. **[Jet Pipeline Upgrade](#jet-pipeline-upgrade)**
 5. **[Extension Points](#jigsaw-extension-points)**
 6. **[Execution](#joystick-execution)**
 7. **[References](#link-references)**
@@ -733,7 +764,7 @@ pipeline.readFrom(ProudSource.file(proud))
 ### Jet Pipeline Upgrade
 
 Alternatively, a native Jet pipeline may be upgraded to a Proud Pipeline to easily 
-incorporate outlier detection. This process can also be easily achieved by using the
+incorporate outlier detection. This process can be easily achieved by using the
 `from(Pipeline, ProudContext)` method in `ProudPipeline`.
 
 A rather naive example of this operation can be seen below.
@@ -784,11 +815,11 @@ ProudPipeline.from(jetPipeline, proud)
 In addition to the extension points for defining custom sources and sinks the Proud Pipeline
 supports the definition of user defined partitioning methods and outlier detection algorithms.
 
-### User Defined Partitioning
+### User Defined Partitioning Extension Point
 
 Lorem ispum sit amet dolor me amor tiero accrecateur.
 
-### User Defined Outlier Detection
+### User Defined Outlier Detection Extension point
 
 Lorem ispum sit amet dolor me amor tiero accrecateur.
 
