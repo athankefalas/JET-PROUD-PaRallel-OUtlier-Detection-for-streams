@@ -957,7 +957,7 @@ All the test cases were defined as JUnit Tests and they included all algorithms,
 supported partitioning methods and all their supported outlier query types.
 
 Any testing of the included algorithms can be done directly from the predefined unit tests
-or by installing Jet PROUD via maven or gradle in a new project and manually define the desired
+or by installing Jet PROUD (via maven or gradle) in a new project and manually defining the desired
 tests.
 
 ## 	:link: References
