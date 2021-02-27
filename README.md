@@ -71,7 +71,8 @@ in a production setting or added in the process of any critical downstream syste
    1. **[User Defined Partitioning](#user-defined-partitioning-extension-points)**
    2. **[User Defined Outlier Detection](#user-defined-outlier-detection-extension-points)**
 6. **[Execution](#joystick-execution)**
-7. **[References](#link-references)**
+7. **[Testing](#ballot_box_with_check-testing)**
+8. **[References](#link-references)**
 
 ## :floppy_disk: Installation
 
@@ -943,7 +944,7 @@ Job job = ProudExecutor.executeJob(pipeline);
 
 // Native Jet API Execution
 JetInstance jet = Jet.newJetInstance();
-Job job = jet.newJob(pipeline.jetPipeline()); // :ballot_box_with_check: IMPORTANT: Do not submit the ProudPipeline directly !!!
+Job job = jet.newJob(pipeline.jetPipeline()); // !!! IMPORTANT: Do not submit the ProudPipeline directly !!!
 
 job.join();
 
@@ -955,6 +956,8 @@ The algorithms have been tested with two datasets the Stocks dataset and the TAO
 All the test cases were defined as JUnit Tests and they included all algorithms, for all their 
 supported partitioning methods and all their supported outlier query types.
 
+Any testing of the included algorithms can be done directly from the predefined unit tests
+or by installing Jet PROUD via maven or gradle in a new project and 
 
 ## 	:link: References
 
