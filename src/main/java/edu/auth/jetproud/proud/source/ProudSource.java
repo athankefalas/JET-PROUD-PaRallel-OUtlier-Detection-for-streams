@@ -1,11 +1,11 @@
 package edu.auth.jetproud.proud.source;
 
 import com.hazelcast.jet.pipeline.Pipeline;
-import com.hazelcast.jet.pipeline.StreamSource;
-import com.hazelcast.jet.pipeline.StreamSourceStage;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.model.AnyProudData;
 import edu.auth.jetproud.proud.context.ProudContext;
+import edu.auth.jetproud.proud.source.files.ProudFileSource;
+import edu.auth.jetproud.proud.source.kafka.ProudKafkaSource;
 import edu.auth.jetproud.proud.source.streams.StreamGenerator;
 import edu.auth.jetproud.proud.source.streams.StreamGenerators;
 
@@ -64,7 +64,7 @@ public interface ProudSource<T extends AnyProudData>
     }
 
     static ProudSource<AnyProudData> kafkaSource(ProudContext context) {
-        return new ProudKafkaSource<>(context, null);
+        return new ProudKafkaSource<>(context, (it) -> it);
     }
 
 }

@@ -1,10 +1,11 @@
-package edu.auth.jetproud.proud.sink;
+package edu.auth.jetproud.proud.sink.influxdb;
 
 import com.hazelcast.jet.contrib.influxdb.InfluxDbSinks;
 import com.hazelcast.jet.pipeline.Sink;
 import edu.auth.jetproud.application.config.InfluxDBConfiguration;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
+import edu.auth.jetproud.proud.sink.AnyProudSink;
 import org.influxdb.dto.Point;
 
 import java.util.HashMap;

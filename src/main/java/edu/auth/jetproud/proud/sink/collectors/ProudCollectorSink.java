@@ -1,9 +1,10 @@
-package edu.auth.jetproud.proud.sink;
+package edu.auth.jetproud.proud.sink.collectors;
 
 import com.hazelcast.jet.pipeline.Sink;
 import com.hazelcast.jet.pipeline.SinkBuilder;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
+import edu.auth.jetproud.proud.sink.AnyProudSink;
 import edu.auth.jetproud.proud.sink.collectors.StreamOutliersCollector;
 import edu.auth.jetproud.utils.Tuple;
 

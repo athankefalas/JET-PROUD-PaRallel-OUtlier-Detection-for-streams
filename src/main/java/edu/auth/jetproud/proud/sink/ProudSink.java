@@ -5,7 +5,10 @@ import com.hazelcast.jet.pipeline.SinkStage;
 import com.hazelcast.jet.pipeline.StreamStage;
 import edu.auth.jetproud.model.meta.OutlierQuery;
 import edu.auth.jetproud.proud.context.ProudContext;
+import edu.auth.jetproud.proud.sink.collectors.ProudCollectorSink;
 import edu.auth.jetproud.proud.sink.collectors.StreamOutliersCollector;
+import edu.auth.jetproud.proud.sink.influxdb.ProudInfluxDBSink;
+import edu.auth.jetproud.proud.sink.logger.ProudPrintSink;
 import edu.auth.jetproud.utils.Tuple;
 import org.influxdb.dto.Point;
 

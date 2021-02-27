@@ -1,4 +1,4 @@
-package edu.auth.jetproud.proud.source;
+package edu.auth.jetproud.proud.source.files;
 
 import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.pipeline.*;
@@ -9,6 +9,7 @@ import edu.auth.jetproud.proud.distributables.DistributedMap;
 import edu.auth.jetproud.proud.partitioning.PartitionedData;
 import edu.auth.jetproud.proud.partitioning.ProudPartitioning;
 import edu.auth.jetproud.proud.partitioning.ReplicationPartitioning;
+import edu.auth.jetproud.proud.source.ProudSource;
 import edu.auth.jetproud.utils.ExceptionUtils;
 import edu.auth.jetproud.utils.Lists;
 import edu.auth.jetproud.utils.Parser;

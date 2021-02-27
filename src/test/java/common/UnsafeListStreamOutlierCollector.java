@@ -18,7 +18,8 @@ public class UnsafeListStreamOutlierCollector implements StreamOutliersCollector
     public void collect(long windowKey, OutlierQuery query, long outlierCount) {
 
         if (debugReporting) {
-            System.out.println("OUTLIERS ==> {"+windowKey+", ("+query+"), "+outlierCount+"}");
+            String queryString = "(r="+query.range+", k="+query.kNeighbours+", w="+query.window+", s="+query.slide+")";
+            System.out.println("DEBUG: Slide("+windowKey+"), Query"+queryString+". Outliers: "+outlierCount+".");
         }
 
         DistributedMap<String, List<Triple<Long, OutlierQuery, Long>>> dItems = new DistributedMap<>("OUT_MAP");
