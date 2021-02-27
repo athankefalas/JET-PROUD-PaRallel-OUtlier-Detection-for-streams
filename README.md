@@ -2,7 +2,7 @@
 
 This library is a port of the [PROUD](https://github.com/tatoliop/PROUD-PaRallel-OUtlier-Detection-for-streams)
 platform for distance based outlier detection in streaming
-environments in [Hazelcast Jet](https://jet-start.sh/).
+environments using [Hazelcast Jet](https://jet-start.sh/).
 
 ## :speech_balloon: About
 
