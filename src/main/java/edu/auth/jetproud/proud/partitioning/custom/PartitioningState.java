@@ -25,7 +25,7 @@ public final class PartitioningState
         data.add(new PartitionedData<>(partition, flagPoint(point, 0)));
     }
 
-    public void pointExcludedFrom(AnyProudData point, int partition) {
+    public void pointIncludedFlaggedIn(AnyProudData point, int partition) {
         data.add(new PartitionedData<>(partition, flagPoint(point, 1)));
     }
 

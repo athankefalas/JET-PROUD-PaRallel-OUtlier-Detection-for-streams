@@ -25,7 +25,7 @@ public abstract class UserDefinedProudPartitioning implements ProudPartitioning
         return partitioningState.getData();
     }
 
-    abstract void partitionPoint(AnyProudData dataPoint, PartitioningState partitioningState);
+    protected abstract void partitionPoint(AnyProudData dataPoint, PartitioningState partitioningState);
 
     @Override
     public final Traverser<PartitionedData<AnyProudData>> jetPartition(AnyProudData dataPoint) {

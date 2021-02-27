@@ -816,15 +816,120 @@ ProudPipeline.from(jetPipeline, proud)
 
 In addition to the extension points for defining custom sources and sinks the Proud Pipeline
 supports the definition of user defined partitioning methods and outlier detection algorithms.
+Both extension points are available through a functional and an Object-Oriented API
+defined in the Proud Pipeline.
 
 ### User Defined Partitioning Extension Points
 
-Lorem ispum sit amet dolor me amor tiero accrecateur.
+A user defined partitioning method can be used by invoking the `partition(...)`
+method on the Proud pipeline with either a `UserDefinedProudPartitioning` instance 
+or a partitioning function as a parameter.
+
+Example use of user defined partitioning:
+
+```java
+
+// Proud Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Proud Pipeline with user defined partitioning using the Object-Oriented API
+ProudPipeline.from(jetPipeline, proud)
+               .partition(new UserDefinedProudPartitioning(proud) {
+                     @Override
+                     public void partitionPoint(AnyProudData dataPoint, PartitioningState partitioningState) {
+                          // Custom Partitioning
+                          // Included in partition 1
+                          partitioningState.pointIncludedIn(dataPoint, 1);
+                          // Included in partition 2, but flagged with 1
+                          partitioningState.pointIncludedFlaggedIn(dataPoint,2);
+                     }
+               })
+               .detectOutliers()
+               .aggregateAndWriteData();
+
+// Proud Pipeline with user defined partitioning using the functional API
+ProudPipeline.from(jetPipeline, proud)
+               .partition((dataPoint, partitioningState)->{
+                    // Custom Partitioning
+                    // Included in partition 1
+                    partitioningState.pointIncludedIn(dataPoint, 1);
+                    // Included in partition 2, but flagged with 1
+                    partitioningState.pointIncludedFlaggedIn(dataPoint,2);
+               })
+               .detectOutliers()
+               .aggregateAndWriteData();
+
+```
 
 ### User Defined Outlier Detection Extension points
 
-Lorem ispum sit amet dolor me amor tiero accrecateur.
+A user defined outlier detection method can be used by invoking the `detectOutliers(...)`
+method on the Proud pipeline with either a `UserDefinedProudAlgorithmExecutor` instance as a single parameter, or
+a converter function as well as an outlier detection function as parameters. It should be noted that using the
+Object-Oriented style with a `UserDefinedProudAlgorithmExecutor` is more flexible than using the
+functional style. The functional declaration of a user defined outlier detection algorithm requires
+two functions, the first being a converter function that maps the stream items to a type that can be handled by the algorithm.
+The second function is a window processing function that can be used to detect outliers in the stream. The custom algorithm defined
+using the functional style API is expected to gracefully handle the query type configured in the Proud configuration.
 
+
+Example use of user defined outlier detection:
+
+```java
+
+// Proud Configuration
+Proud proud = /* Configuration Creation */ ;
+
+// Proud Pipeline with user defined outlier detection using the Object-Oriented API
+ProudPipeline.from(jetPipeline, proud)
+              .partition()
+              .detectOutliers(new UserDefinedProudAlgorithmExecutor<AnyProudData>(proud) {
+                  @Override
+                  public List<ProudSpaceOption> supportedSpaceOptions() {
+                       return new ArrayList<ProudSpaceOption>(){{
+                          add(ProudSpaceOption.Single);
+                       }};
+                  }
+                  
+                  @Override
+                  protected <D extends AnyProudData> AnyProudData transform(D point) {
+                       // Convert point to a type that is required by the custom algorithm 
+                       return point;
+                  }
+                  
+                  // Optional Override, if algorithm can process S queries
+                  @Override
+                  protected StreamStage<Tuple<Long, OutlierQuery>> processSingleSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AnyProudData>>>> windowedStage) throws UnsupportedSpaceException {
+                       // Custom outlier detection
+                       return null;
+                 }
+                  
+                  // Optional Override, if algorithm can process RK queries
+                  @Override
+                  protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AnyProudData>>>> windowedStage) throws UnsupportedSpaceException {
+                       // Custom outlier detection
+                       return null;
+                  }
+                  
+                  // Optional Override, if algorithm can process RKWS queries
+                  @Override
+                  protected StreamStage<Tuple<Long, OutlierQuery>> processMultiQueryParamsMultiWindowParamsSpace(StreamStage<KeyedWindowResult<Integer, List<Tuple<Integer, AnyProudData>>>> windowedStage) throws UnsupportedSpaceException {
+                       // Custom outlier detection
+                       return null;
+                  }
+                  
+              })
+              .aggregateAndWriteData();
+
+// Proud Pipeline with user defined outlier detection using the functional API
+ProudPipeline.from(jetPipeline, proud)
+               .partition()
+               .detectOutliers((item) -> item, (window, state) -> {
+                    return new OutlierQuery(0,0,0, 0).withOutlierCount(20);
+               })
+               .aggregateAndWriteData();
+
+```
 
 ## :joystick: Execution
 
@@ -838,11 +943,18 @@ Job job = ProudExecutor.executeJob(pipeline);
 
 // Native Jet API Execution
 JetInstance jet = Jet.newJetInstance();
-Job job = jet.newJob(pipeline.jetPipeline()); // IMPORTANT: Do not submit the ProudPipeline directly !!!
+Job job = jet.newJob(pipeline.jetPipeline()); // :ballot_box_with_check: IMPORTANT: Do not submit the ProudPipeline directly !!!
 
 job.join();
 
 ```
+
+## :ballot_box_with_check: Testing
+
+The algorithms have been tested with two datasets the Stocks dataset and the TAO dataset.
+All the test cases were defined as JUnit Tests and they included all algorithms, for all their 
+supported partitioning methods and all their supported outlier query types.
+
 
 ## 	:link: References
 
