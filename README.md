@@ -670,7 +670,7 @@ ProudSource.file(proud, "$FILE_NAME", "$FIELD_DELIMITER", "$VALUE_DELIMITER");
 
 A Kafka source reads stream items from a Kafka broker and listening to a specific topic.
 The Kafka source implemented by default in PROUD is an instance of `ProudKafkaSource` which
-implements the `ProudSource` interface. By default, the Kafka connection information used in these source
+implements the `ProudSource` interface. By default, the Kafka connection information used in the source
 are retrieved from the configuration.
 
 Proud Kafka sources can be created by using the method below:
