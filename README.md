@@ -960,6 +960,10 @@ Any testing of the included algorithms can be done directly from the predefined 
 or by installing Jet PROUD (via maven or gradle) in a new project and manually defining the desired
 tests.
 
+
+**[:arrow_up: Contents](#compass-contents)**|
+------------------------------|
+
 ## 	:link: References
 
 **[1]**
