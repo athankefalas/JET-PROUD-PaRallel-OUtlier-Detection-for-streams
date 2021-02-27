@@ -99,16 +99,25 @@ compile group: 'edu.auth', name: 'jet-proud', version: 1.0
 compile "edu.auth:jet-proud:1.0"
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ## :bulb: General
 
 The PROUD library is designed to mimic the general pipeline model used by Hazelcast Jet while retaining compatibility with
 the native Jet pipeline API. A new PROUD pipeline can be created from scratch or by upgrading an existing native Jet `Pipeline`
 whilst a PROUD Pipeline can be downgraded to a native Jet `Pipeline` at any point.
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ## :toolbox: Configuration
 
 Before the PROUD pipeline can be used the PROUD library must be correctly configured. In order to
 configure the library a client can use either a code based configuration or a command line argument based one.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ### Configuration Builder
 
@@ -131,6 +140,9 @@ when using user defined algorithms or partitioning methods the correctness of th
 exact specifications of the user defined component are unknown. Additionally, the proper combination of Algorithm - Outlier Query Type
 is also not checked by the builder at compile time in version 1.0 and the client must select the correct combination. For a list of supported
 Algorithm - Outlier Query Type combination view the next section.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### **1. Algorithm Selection**
 
@@ -159,6 +171,9 @@ The available algorithms along with their compatible outlier query types are:
 
 While using a user defined algorithm is possible by selecting the option
  * UserDefined - **Unknown**
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### 2. Outlier Query Type Selection
 
@@ -191,6 +206,9 @@ Proud proud = Proud.builder()
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 #### 3. Outlier Query Definition
 
 After the required outlier query type is selected, the parameters for the query must be configured. The builder automatically provides a function
@@ -222,6 +240,9 @@ Proud proud = Proud.builder()
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 #### 4. Dataset and Input Configuration
 
 The next step includes the configuration of the input dataset and the source to read the dataset items from. PROUD supports by default a
@@ -251,6 +272,9 @@ Proud proud = Proud.builder()
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 #### 5. Partitioning Method Configuration
 
 The configuration of the partitioning method to be used by PROUD can also be configured via the builder instance. The available partitioning methods
@@ -262,6 +286,9 @@ and the algorithms they are supported by, are the following:
 * User Defined - **Unknown**
 
 The options for each partitioning method can be seen in the following sections.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ##### Replication Partitioning
 
@@ -283,6 +310,9 @@ Proud proud = Proud.builder()
 
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ##### Tree Partitioning
 
@@ -321,6 +351,9 @@ Proud proud = Proud.builder()
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ##### Grid Partitioning
 
 Value based partitioning with Grid, uses a grid cell structure and the spatial coordinates of an item
@@ -350,6 +383,9 @@ Proud proud = Proud.builder()
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ##### User Defined Partitioning
 
 PROUD allows for the definition and use of a user defined partitioning method when using the PROUD Pipeline. The feature
@@ -370,6 +406,9 @@ Proud proud = Proud.builder()
 
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### 6. Output Configuration
 
@@ -410,6 +449,10 @@ Proud proud = Proud.builder()
 
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 #### 7. Building the configuration
 
 After the configuration is created using the builder the `build()` method must be invoked to
@@ -440,12 +483,17 @@ Proud proud = Proud.builder()
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ### Command Line Arguments Configuration
 
 An alternative to using the builder object to configure PROUD is to use command line arguments as wells as
 environment variables to extract the configuration options. This method of configuring PROUD is
 compatible with the Flink version of PROUD and uses the same options and variables.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### Command Line Options
 
@@ -461,6 +509,8 @@ Command | Options
 **partitioning**| Partitioning option. <BR>"*replication*" partitioning is mandatory for "naive" and "advanced" algorithms whilst "*grid*" and "*tree*" partitioning is available for every other algorithm. <BR> "*grid*" technique needs pre-recorded data on the dataset's distribution. <BR> "*tree*" technique needs a file containing data points from the dataset in order to initialize the VP-tree
 **tree_init** (Optional)| Represents the number of data points to be read for initialization by the "*tree*" partitioning technique.<BR> *Default value is 10000*
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### Environment Variables
 
@@ -473,6 +523,9 @@ INFLUXDB_DB|The name of the InfluxDB database
 INFLUXDB_HOST|The host of the InfluxDB database
 INFLUXDB_USER| The username needed for authenticating with the InfluxDB database
 INFLUXDB_PASSWORD|The password needed for authenticating with the InfluxDB database
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### Creating the Configuration
 
@@ -491,6 +544,9 @@ public static void main(String[] args) throws ProudArgumentException {
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 #### Caveats
 
 The command line configuration of PROUD is not recommended as it may only work with the two default datasets (Stocks, TAO)
@@ -498,6 +554,9 @@ especially when using grid partitioning.
 Additionally, no user defined functionalities can be added with this style of configuration. 
 The use of the builder object is the preferred way to configure PROUD, and
 the command line option is used for compatibility purposes only.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ## :dart: PROUD Pipeline API
 
@@ -536,12 +595,18 @@ pipeline.readData()
 Job job = ProudExecutor.executeJob(pipeline);
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ### Proud Source
 
 The stream items are read from an instance that implements `ProudSource`
 and can be ultimately resolved to a native Jet `Source`. Instances of `ProudSource`
 that are implemented by default in PROUD can read stream items from a file,
 or a kafka topic. 
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### Auto Source
 
@@ -559,6 +624,9 @@ Proud proud = /* Configuration Creation */ ;
 ProudSource.auto(proud);
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### File Source
 
@@ -595,6 +663,9 @@ ProudSource.file(proud, "$FILE_NAME", "$FIELD_DELIMITER", "$VALUE_DELIMITER");
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 #### Kafka Source
 
 A Kafka source reads stream items from a Kafka broker and listening to a specific topic.
@@ -614,6 +685,9 @@ Proud proud = /* Configuration Creation */ ;
 ProudSource.kafkaSource(proud);
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### User Defined Sources
 
@@ -645,17 +719,26 @@ pipeline.readFrom(new ProudSource<AnyProudData>() { ... })
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ### Partition Data
 
 The stream items that were read into the Proud Pipeline can be easily partitioned
 by invoking the `partition()` method. The underlying partitioning implementation is
 automatically selected by checking the configuration options.
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ### Detect Outliers
 
 The partitioned stream items in the Proud Pipeline can be easily processed in order
 to detect outliers by invoking the `detectOutliers()` method. The underlying 
 algorithm, parameters and processing is automatically selected by checking the configuration options.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ### Proud Sink
 
@@ -664,7 +747,11 @@ implements the `ProudSink` interface and can be ultimately resolved to native
 Jet `Sink`. Instances of `ProudSink` that are implemented by default in PROUD
 can be used to write data to an influxDB server or print them to the console.
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 #### Auto Sink
+
 As it was mentioned previously the sink can be automatically resolved from the
 PROUD configuration. To create the appropriate sink automatically use the code below:
 
@@ -677,6 +764,10 @@ Proud proud = /* Configuration Creation */ ;
 ProudSink.auto(proud);
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 
 #### Logger Sink
 
@@ -694,6 +785,10 @@ Proud proud = /* Configuration Creation */ ;
 ProudSink.logger(proud);
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
+
 #### InfluxDB Sink
 
 An InfluxDB sink writes stream items to an InfluxDB database. The InfluxDB proud sink
@@ -709,6 +804,9 @@ Proud proud = /* Configuration Creation */ ;
 // Create an InfluxDB sink.
 ProudSink.influxDB(proud);
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 #### User Defined Sinks
 
@@ -741,6 +839,9 @@ pipeline.readData()
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ### Pipeline Downgrade
 
 The Proud Pipeline can be downgraded to a native Jet pipeline at any point as the Proud Pipeline
@@ -763,6 +864,10 @@ pipeline.readFrom(ProudSource.file(proud))
         .writeTo(Sinks.logger()); // Jet Pipeline, Jet Sink
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 
 ### Jet Pipeline Upgrade
 
@@ -813,12 +918,19 @@ ProudPipeline.from(jetPipeline, proud)
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
+
 ## :jigsaw: Extension Points
 
 In addition to the extension points for defining custom sources and sinks the Proud Pipeline
 supports the definition of user defined partitioning methods and outlier detection algorithms.
 Both extension points are available through a functional and an Object-Oriented API
 defined in the Proud Pipeline.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ### User Defined Partitioning Extension Points
 
@@ -861,6 +973,9 @@ ProudPipeline.from(jetPipeline, proud)
                .aggregateAndWriteData();
 
 ```
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
 
 ### User Defined Outlier Detection Extension points
 
@@ -932,6 +1047,10 @@ ProudPipeline.from(jetPipeline, proud)
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
+
 ## :joystick: Execution
 
 After the Proud library is configured and the pipeline is defined the pipeline can be submitted to Jet
@@ -950,6 +1069,9 @@ job.join();
 
 ```
 
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
+
 ## :ballot_box_with_check: Testing
 
 The algorithms have been tested with two datasets the Stocks dataset and the TAO dataset.
@@ -962,7 +1084,7 @@ tests.
 
 
 **[:arrow_up: Contents](#compass-contents)**|
-------------------------------|
+--------------------------------------------|
 
 ## 	:link: References
 
@@ -984,3 +1106,6 @@ Theodoros Toliopoulos and Anastasios Gounaris,
 _Multi-parameter streaming outlier detection._
 In Proceedings of the 2019 IEEE/WIC/ACM International Conference on Web Intelligence (WI), Thessaloniki, Greece, 2019, pp. 208-216.
 DOI:https://doi.org/10.1145/3350546.3352520.
+
+**[:arrow_up: Contents](#compass-contents)**|
+--------------------------------------------|
