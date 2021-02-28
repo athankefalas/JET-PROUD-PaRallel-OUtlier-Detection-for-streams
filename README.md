@@ -149,11 +149,10 @@ Algorithm - Outlier Query Type combination view the next section.
 This option sets the algorithm that will be used for detecting outliers in the stream and can be set by the following:
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-
+// Proud with Naive algorithm Configuration
 Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Naive)
+
 ```
 
 The available algorithms along with their compatible outlier query types are:
@@ -186,8 +185,6 @@ This option selects the type of outlier detection query to be used by PROUD. The
 The required query type can be set right after selecting the algorithm, like so:
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 
 // Single Space Outlier Query Type
 Proud proud = Proud.builder()
@@ -217,8 +214,6 @@ K - number of neighbours, R - distance range, W - window size in milliseconds an
 definition of query parameters for each query type can be seen below.
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 
 // Single Space Outlier Query Type
 Proud proud = Proud.builder()
@@ -249,8 +244,6 @@ The next step includes the configuration of the input dataset and the source to 
 file input datasource, and a kafka input datasource which can be later automatically resolved to a Hazelcast Jet `Source`.
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 
 // Dataset - File Datasource
 Proud proud = Proud.builder()
@@ -296,9 +289,7 @@ Replication Partitioning replicates the stream items in all Jet partitions, whil
 that truly belong in the partition with `0` and replicated items with `1`.
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-
+// Proud with Replication Partitioning Configuration
 Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Naive)
                 .inSingleSpace()
@@ -325,8 +316,6 @@ with a sample of the dataset and must be available as a file.
 Tree based partitioning can be configured by the following:
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 
 // Tree Partitioning
 Proud proud = Proud.builder()
@@ -368,9 +357,7 @@ be created by invoking `DefaultGridPartitioners.forDatasetNamed("STK")`. While t
 grid partitioning can be seen below. 
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-
+// Proud with Grid Partitioning Configuration
 Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.PMCod)
                 .inSingleSpace()
@@ -392,9 +379,7 @@ PROUD allows for the definition and use of a user defined partitioning method wh
 however is opt-in and must be explicitly configured.
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-
+// Proud with User Defined Partitioning Configuration
 Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Naive)
                 .inSingleSpace()
@@ -419,8 +404,6 @@ influxDB. Both types of output can be auto-resolved to a Hazelcast Sink.
 The configuration of the output of PROUD can be seen below.
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
 
 // Logger output
 Proud proud = Proud.builder()
@@ -462,9 +445,7 @@ the configuration. The finalized configuration is an instance that implements `P
 is used internally by PROUD to extract the configured options. A complete example of the configuration process can be seen below.
 
 ```java
-import edu.auth.jetproud.proud.context.Proud;
-import edu.auth.jetproud.application.parameters.data.ProudAlgorithmOption;
-
+// Building a Proud Configuration
 Proud proud = Proud.builder()
                 .forAlgorithm(ProudAlgorithmOption.Naive)
                 .inSingleSpace()
@@ -535,11 +516,16 @@ arguments and environment variables discussed above.
 ```java
 import edu.auth.jetproud.proud.context.Proud;
 
-public static void main(String[] args) throws ProudArgumentException {
-        Proud proud = Proud.builder(args)
-                           .enablingDebug()
-                           .build();
+public class Main {
+    
+   public static void main(String[] args) throws ProudArgumentException {
+      Proud proud = Proud.builder(args)
+              .enablingDebug()
+              .build();
+   }
+   
 }
+
 
 
 ```
