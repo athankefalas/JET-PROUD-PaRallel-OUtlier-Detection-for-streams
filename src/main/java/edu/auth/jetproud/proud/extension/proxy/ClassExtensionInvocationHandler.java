@@ -229,9 +229,15 @@ public final class ClassExtensionInvocationHandler<Target> implements Invocation
         if (!returnTypeMatches)
             return false;
 
+        int originParameterCount = origin.getParameterCount();
+        int targetParameterCount = target.getParameterCount();
+
+        if (originParameterCount != targetParameterCount)
+            return false;
+
         for (int i=0; i < origin.getParameterTypes().length; i++) {
-            Class<?> originParamType = origin.getReturnType();
-            Class<?> targetParamType = target.getReturnType();
+            Class<?> originParamType = origin.getParameterTypes()[i];
+            Class<?> targetParamType = target.getParameterTypes()[i];
 
             boolean paramTypeMatches = targetParamType.isAssignableFrom(originParamType);
 
@@ -264,9 +270,17 @@ public final class ClassExtensionInvocationHandler<Target> implements Invocation
         if (returnTypeMatches)
             priority++;
 
+        int originParameterCount = origin.getParameterCount();
+        int targetParameterCount = target.getParameterCount();
+
+        if (originParameterCount != targetParameterCount)
+            return INCOMPATIBLE;
+        else
+            priority++;
+
         for (int i=0; i < origin.getParameterTypes().length; i++) {
-            Class<?> originParamType = origin.getReturnType();
-            Class<?> targetParamType = target.getReturnType();
+            Class<?> originParamType = origin.getParameterTypes()[i];
+            Class<?> targetParamType = target.getParameterTypes()[i];
 
             String originParamTypeName = originParamType.getCanonicalName();
             String targetParamTypeName = targetParamType.getCanonicalName();
