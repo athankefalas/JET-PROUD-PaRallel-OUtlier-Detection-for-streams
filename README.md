@@ -30,6 +30,12 @@ and Hazelcast Jet by [Athanasios Kefalas](https://github.com/athankefalas). This
 library is provided *AS IS* and it is **NOT** recommended that it is used
 in a production setting or added in the process of any critical downstream systems.
 
+## :book: Changelog
+
+Version|Changes
+-------|-------
+1.0|First Release
+
 ## :compass: Contents
 
 1. **[Installation](#floppy_disk-installation)**
