@@ -32,9 +32,9 @@ in a production setting or added in the process of any critical downstream syste
 
 ## :book: Changelog
 
-Version|Changes
--------|-------
-1.0|First Release
+PROUD Version|Jet Version|Changes
+-------------|-----------|------
+1.0|4.3|First Release
 
 ## :compass: Contents
 
